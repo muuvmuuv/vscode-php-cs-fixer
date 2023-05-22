@@ -1,0 +1,10 @@
+{
+  "[php]": {
+    "editor.defaultFormatter": "muuvmuuv.vscode-php-cs-fixer",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": false,
+      "source.organizeImports": false
+    }
+  }
+}

@@ -1,0 +1,12 @@
+# https://github.com/Arkweid/lefthook/blob/master/docs/full_guide.md
+
+pre-commit:
+  commands:
+    lint:
+      glob: "*.{js,ts}"
+      run: node_modules/.bin/eslint {staged_files}
+
+commit-msg:
+  commands:
+    lint-commit-msg:
+      run: node_modules/.bin/commitlint --edit

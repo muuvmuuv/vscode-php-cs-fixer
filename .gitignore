@@ -1,0 +1,9 @@
+dist/
+out/
+node_modules/
+vendor/
+tmp/
+.eslintcache
+*.vsix
+.env
+.*cache
