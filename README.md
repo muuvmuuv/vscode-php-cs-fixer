@@ -2,6 +2,9 @@
 
 # PHP-CS-Fixer
 
+> Install from here:
+> https://marketplace.visualstudio.com/items?itemName=muuvmuuv.vscode-just-php-cs-fixer
+
 Run just the PHP-CS-Fixer.
 
 ### Why?
