@@ -11,7 +11,8 @@
         "base": "$tsc-watch",
         "applyTo": "allDocuments",
         "background": {
-          "beginsPattern": "^.*running",
+          "activeOnStart": true,
+          "beginsPattern": "^.*Running",
           "endsPattern": "^.*watching"
         }
       },

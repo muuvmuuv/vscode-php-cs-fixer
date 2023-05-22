@@ -16,6 +16,7 @@ import {
 } from 'vscode'
 
 let executable: string | undefined
+let config: string | undefined
 let cancellationToken: CancellationToken | undefined
 
 async function findPhpCsFixerExecutable(): Promise<string> {
@@ -51,9 +52,43 @@ async function findPhpCsFixerExecutable(): Promise<string> {
   }
 }
 
+async function findPhpCsFixerConfig(): Promise<string> {
+  if (config) {
+    return config
+  }
+
+  const userConfig = workspace.getConfiguration('php-cs-fixer').get<string>('config')
+  if (userConfig) {
+    return (config = userConfig)
+  }
+
+  try {
+    const files = await workspace.findFiles(
+      `**/.php-cs-fixer.php`,
+      undefined,
+      1,
+      cancellationToken,
+    )
+
+    if (files.length === 0) {
+      throw new Error('No config found.')
+    }
+
+    return (config = files[0].fsPath)
+  } catch (error) {
+    if (error instanceof Error) {
+      window.showErrorMessage('Failed searching for config: ' + error.message)
+    }
+    throw error
+  }
+}
+
 export function activate(context: ExtensionContext): void {
   workspace.onDidChangeConfiguration((event) => {
     if (event.affectsConfiguration('php-cs-fixer.executable')) {
+      executable = undefined
+    }
+    if (event.affectsConfiguration('php-cs-fixer.config')) {
       executable = undefined
     }
   })
@@ -85,11 +120,18 @@ export function activate(context: ExtensionContext): void {
           await fs.writeFile(temporaryFile, originalContents, 'utf8')
 
           const phpCsFixerExecutable = await findPhpCsFixerExecutable()
+          const phpCsFixerConfig = await findPhpCsFixerConfig()
 
           try {
             const process = execa(
               phpCsFixerExecutable,
-              ['fix', '--using-cache=no', '-nq', temporaryFile],
+              [
+                'fix',
+                '--using-cache=no',
+                '-nq',
+                `--config=${phpCsFixerConfig}`,
+                temporaryFile,
+              ],
               { encoding: 'utf8' },
             )
 

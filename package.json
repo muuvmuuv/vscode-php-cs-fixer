@@ -1,7 +1,7 @@
 {
   "name": "vscode-just-php-cs-fixer",
-  "displayName": "PHP-CS-Fixer Formatter",
-  "version": "0.1.0",
+  "displayName": "PHP Formatter PHP-CS-Fixer",
+  "version": "0.2.0",
   "description": "Run just PHP-CS-Fixer.",
   "icon": "assets/logo.png",
   "publisher": "muuvmuuv",
@@ -71,6 +71,10 @@
         "php-cs-fixer.executable": {
           "type": "string",
           "description": "The executable name or relative path."
+        },
+        "php-cs-fixer.config": {
+          "type": "string",
+          "description": "The config path."
         }
       }
     }

@@ -7,6 +7,7 @@
       "type": "extensionHost",
       "request": "launch",
       "args": [
+        "--disable-extension=muuvmuuv.vscode-just-php-cs-fixer",
         "--extensionDevelopmentPath=${workspaceFolder}",
         "${workspaceFolder}/testProject"
       ],

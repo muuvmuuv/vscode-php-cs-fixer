@@ -4,15 +4,14 @@ namespace App\Enums;
 
 enum QueueTasks: string
 {
-    case CONNECTOR_EXPORT = 'connectorExport';
-    case DEACTIVATE = 'deactivate';
-    case DELETE = 'delete';
-    case DELETE_TEST_CONTACTS = 'deleteTestContacts';
-    case EXPORT = 'export';
-    case CONTACT_FORWARDING = 'contactForwarding';
-    case PREVIEW_IMAGE = 'previewImages';
+	case CONNECTOR_EXPORT = 'connectorExport';
+	case DEACTIVATE = 'deactivate';
+	case DELETE = 'delete';
+	case DELETE_TEST_CONTACTS = 'deleteTestContacts';
+	case EXPORT = 'export';
+	case CONTACT_FORWARDING = 'contactForwarding';
+	case PREVIEW_IMAGE = 'previewImages';
 }
-
 
 ?>
 
