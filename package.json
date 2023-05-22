@@ -1,6 +1,6 @@
 {
-  "name": "vscode-php-cs-fixer",
-  "displayName": "PHP-CS-Fixer",
+  "name": "vscode-just-php-cs-fixer",
+  "displayName": "PHP-CS-Fixer Formatter",
   "version": "0.1.0",
   "description": "Run just PHP-CS-Fixer.",
   "icon": "assets/logo.png",
