@@ -5,12 +5,15 @@
 > Install from here:
 > https://marketplace.visualstudio.com/items?itemName=muuvmuuv.vscode-just-php-cs-fixer
 
-Run just the PHP-CS-Fixer.
+Run just the PHP-CS-Fixer with zero dependencies!
 
 ### Why?
 
 Other extension are way to complex or include HTML formatting, which does not work well
 with PHP-CS-Fixer.
+
+If you want HTML formatting, download Intelephense and run this extension together with
+_emeraldwalk.RunOnSave_.
 
 ---
 

@@ -1,7 +1,7 @@
 {
   "name": "vscode-just-php-cs-fixer",
   "displayName": "PHP Formatter PHP-CS-Fixer",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Run just PHP-CS-Fixer.",
   "icon": "assets/logo.png",
   "publisher": "muuvmuuv",
@@ -36,9 +36,6 @@
     "lint": "eslint --cache --ext js,ts .",
     "vscode:prepublish": "npm run package"
   },
-  "dependencies": {
-    "execa": "^7.1.1"
-  },
   "devDependencies": {
     "@commitlint/cli": "^17.6.1",
     "@commitlint/config-conventional": "^17.6.1",
@@ -59,7 +56,8 @@
     "vscode": "^1.74.3"
   },
   "activationEvents": [
-    "onLanguage:php"
+    "onLanguage:php",
+    "onCommand:php-cs-fixer.fix"
   ],
   "contributes": {
     "configuration": {
@@ -75,7 +73,13 @@
           "description": "The config path."
         }
       }
-    }
+    },
+    "commands": [
+      {
+        "command": "php-cs-fixer.fix",
+        "title": "Format with PHP-CS-Fixer"
+      }
+    ]
   },
   "commitlint": {
     "extends": [
