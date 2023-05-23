@@ -13,10 +13,12 @@ import {
   TextEdit,
   window,
   workspace,
+  WorkspaceConfiguration,
 } from 'vscode'
 
 let executable: string | undefined
 let config: string | undefined
+let extensionConfiguration!: WorkspaceConfiguration
 let cancellationToken: CancellationToken | undefined
 
 async function findPhpCsFixerExecutable(): Promise<string> {
@@ -24,9 +26,7 @@ async function findPhpCsFixerExecutable(): Promise<string> {
     return executable
   }
 
-  const userExecutable = workspace
-    .getConfiguration('php-cs-fixer')
-    .get<string>('executable')
+  const userExecutable = extensionConfiguration.get<string>('executable')
   if (userExecutable) {
     return (executable = userExecutable)
   }
@@ -57,7 +57,7 @@ async function findPhpCsFixerConfig(): Promise<string> {
     return config
   }
 
-  const userConfig = workspace.getConfiguration('php-cs-fixer').get<string>('config')
+  const userConfig = extensionConfiguration.get<string>('config')
   if (userConfig) {
     return (config = userConfig)
   }
@@ -65,7 +65,7 @@ async function findPhpCsFixerConfig(): Promise<string> {
   try {
     const files = await workspace.findFiles(
       `**/.php-cs-fixer.php`,
-      undefined,
+      '**/vendor/**',
       1,
       cancellationToken,
     )
@@ -84,6 +84,8 @@ async function findPhpCsFixerConfig(): Promise<string> {
 }
 
 export function activate(context: ExtensionContext): void {
+  extensionConfiguration = workspace.getConfiguration('php-cs-fixer')
+
   workspace.onDidChangeConfiguration((event) => {
     if (event.affectsConfiguration('php-cs-fixer.executable')) {
       executable = undefined
@@ -113,14 +115,22 @@ export function activate(context: ExtensionContext): void {
             return
           }
 
+          token.onCancellationRequested(() => {
+            cancellationToken = undefined
+          })
           cancellationToken = token
+          extensionConfiguration = workspace.getConfiguration('php-cs-fixer')
+
+          const phpCsFixerExecutable = await findPhpCsFixerExecutable()
+          console.log('PHP-CS-Fixer executable:', phpCsFixerExecutable)
+          const phpCsFixerConfig = await findPhpCsFixerConfig()
+          console.log('PHP-CS-Fixer config:', phpCsFixerConfig)
+
+          console.log('Formatting with PHP-CS-Fixer:', document.uri.fsPath)
 
           const originalContents = document.getText()
           const temporaryFile = path.resolve(tmpdir(), 'pcf-' + Date.now() + '.php')
           await fs.writeFile(temporaryFile, originalContents, 'utf8')
-
-          const phpCsFixerExecutable = await findPhpCsFixerExecutable()
-          const phpCsFixerConfig = await findPhpCsFixerConfig()
 
           try {
             const process = execa(
