@@ -113,8 +113,18 @@ async function provideDocumentFormattingEdits(
   await fs.writeFile(temporaryFile, originalContents, 'utf8')
 
   try {
-    const command = `${phpCsFixerExecutable} fix --using-cache=no -nq --config=${phpCsFixerConfig} ${temporaryFile}`
-    const process = exec(command, { encoding: 'utf8' })
+    const command = [
+      phpCsFixerExecutable,
+      'fix',
+      '--using-cache=no',
+      extensionConfiguration.get('allow-risky')
+        ? '--allow-risky=yes'
+        : '--allow-risky=no',
+      '-nq',
+      `--config=${phpCsFixerConfig}`,
+      temporaryFile,
+    ]
+    const process = exec(command.join(' '), { encoding: 'utf8' })
 
     token?.onCancellationRequested(() => {
       process.kill()
