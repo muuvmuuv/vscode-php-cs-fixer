@@ -5,6 +5,7 @@ import path from 'path'
 import {
   CancellationToken,
   commands,
+  env,
   ExtensionContext,
   FormattingOptions,
   languages,
@@ -33,8 +34,14 @@ async function findPhpCsFixerExecutable(): Promise<string> {
   }
 
   try {
+    const executableName = env.remoteName
+      ? 'php-cs-fixer'
+      : process.platform === 'win32'
+      ? 'php-cs-fixer.bat'
+      : 'php-cs-fixer'
+
     const files = await workspace.findFiles(
-      `**/vendor/bin/php-cs-fixer`,
+      `**/vendor/${executableName}`,
       undefined,
       1,
       cancellationToken,
