@@ -34,7 +34,7 @@ async function findPhpCsFixerExecutable(): Promise<string> {
 
   try {
     const files = await workspace.findFiles(
-      `**/vendor/bin/php-cs-fixer*`,
+      `**/vendor/bin/php-cs-fixer`,
       undefined,
       1,
       cancellationToken,
