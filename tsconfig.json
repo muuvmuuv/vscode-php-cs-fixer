@@ -10,6 +10,7 @@
     "strict": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
     "noUnusedParameters": true
   },
   "exclude": ["node_modules", "tmp", "dist"]
