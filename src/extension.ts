@@ -5,7 +5,6 @@ import path from 'path'
 import {
   CancellationToken,
   commands,
-  env,
   ExtensionContext,
   FormattingOptions,
   languages,
@@ -23,6 +22,8 @@ let config: string | undefined
 let extensionConfiguration!: WorkspaceConfiguration
 let cancellationToken: CancellationToken | undefined
 
+const log = window.createOutputChannel('PHP-CS-Fixer')
+
 async function findPhpCsFixerExecutable(): Promise<string> {
   if (executable) {
     return executable
@@ -34,14 +35,9 @@ async function findPhpCsFixerExecutable(): Promise<string> {
   }
 
   try {
-    const executableName = env.remoteName
-      ? 'php-cs-fixer'
-      : process.platform === 'win32'
-      ? 'php-cs-fixer.bat'
-      : 'php-cs-fixer'
-
+    const executableName = 'php-cs-fixer' + (process.platform === 'win32' ? '.bat' : '')
     const files = await workspace.findFiles(
-      `**/vendor/${executableName}`,
+      `**/vendor/bin/${executableName}`,
       undefined,
       1,
       cancellationToken,
@@ -109,11 +105,11 @@ async function provideDocumentFormattingEdits(
   extensionConfiguration = workspace.getConfiguration('php-cs-fixer')
 
   const phpCsFixerExecutable = await findPhpCsFixerExecutable()
-  console.log('PHP-CS-Fixer executable:', phpCsFixerExecutable)
+  log.appendLine('PHP-CS-Fixer executable: ' + phpCsFixerExecutable)
   const phpCsFixerConfig = await findPhpCsFixerConfig()
-  console.log('PHP-CS-Fixer config:', phpCsFixerConfig)
+  log.appendLine('PHP-CS-Fixer config: ' + phpCsFixerConfig)
 
-  console.log('Formatting with PHP-CS-Fixer:', document.uri.fsPath)
+  log.appendLine('Formatting with PHP-CS-Fixer ' + document.uri.fsPath)
 
   const originalContents = document.getText()
   const temporaryFile = path.resolve(tmpdir(), 'pcf-' + Date.now() + '.php')
