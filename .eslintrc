@@ -4,9 +4,19 @@
     "node": true,
     "es6": true
   },
-  "plugins": ["simple-import-sort"],
-  "extends": ["eslint:recommended", "plugin:unicorn/recommended", "prettier"],
-  "ignorePatterns": ["dist", "testProject", "tmp"],
+  "plugins": [
+    "simple-import-sort"
+  ],
+  "extends": [
+    "eslint:recommended",
+    "plugin:unicorn/recommended",
+    "prettier"
+  ],
+  "ignorePatterns": [
+    "dist",
+    "testProject",
+    "tmp"
+  ],
   "parserOptions": {
     "ecmaVersion": 2020,
     "sourceType": "module"
@@ -15,13 +25,21 @@
     "unicorn/prefer-module": "off",
     "unicorn/prefer-node-protocol": "off",
     "simple-import-sort/imports": "error",
-    "simple-import-sort/exports": "error"
+    "simple-import-sort/exports": "error",
+    "no-console": "error"
   },
   "overrides": [
     {
-      "files": ["*.ts"],
-      "plugins": ["@typescript-eslint"],
-      "extends": ["plugin:@typescript-eslint/recommended", "prettier"],
+      "files": [
+        "*.ts"
+      ],
+      "plugins": [
+        "@typescript-eslint"
+      ],
+      "extends": [
+        "plugin:@typescript-eslint/recommended",
+        "prettier"
+      ],
       "parser": "@typescript-eslint/parser",
       "parserOptions": {
         "project": "tsconfig.json"

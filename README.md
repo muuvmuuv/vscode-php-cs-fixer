@@ -5,7 +5,7 @@
 > Install from here:
 > https://marketplace.visualstudio.com/items?itemName=muuvmuuv.vscode-just-php-cs-fixer
 
-Run just the PHP-CS-Fixer with zero dependencies, just 3.4 kb!
+Run just the PHP-CS-Fixer with zero dependencies, just ~7 kb!
 
 ### How?
 

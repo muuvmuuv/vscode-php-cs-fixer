@@ -4,8 +4,8 @@
     "editor.defaultFormatter": "muuvmuuv.vscode-just-php-cs-fixer",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-      "source.fixAll": false,
-      "source.organizeImports": false
+      "source.fixAll": "never",
+      "source.organizeImports": "never"
     }
   }
 }

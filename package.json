@@ -1,7 +1,7 @@
 {
   "name": "vscode-just-php-cs-fixer",
   "displayName": "PHP Formatter PHP-CS-Fixer",
-  "version": "0.6.2",
+  "version": "1.0.0",
   "description": "Run just PHP-CS-Fixer.",
   "icon": "assets/logo.png",
   "publisher": "muuvmuuv",
@@ -12,7 +12,10 @@
   "keywords": [
     "php",
     "php-cs-fixer",
-    "format"
+    "php-formatter",
+    "formatter",
+    "format",
+    "multi-root ready"
   ],
   "homepage": "https://github.com/muuvmuuv/vscode-php-cs-fixer",
   "bugs": {
@@ -37,9 +40,9 @@
     "vscode:prepublish": "npm run package"
   },
   "devDependencies": {
-    "@commitlint/cli": "^17.6.7",
-    "@commitlint/config-conventional": "^17.6.7",
-    "@types/node": "~16.18.39",
+    "@commitlint/cli": "^18.4.4",
+    "@commitlint/config-conventional": "^18.4.4",
+    "@types/node": "^20",
     "@types/vscode": "^1.74.3",
     "@typescript-eslint/eslint-plugin": "^6.2.0",
     "@typescript-eslint/parser": "^6.2.0",
@@ -48,7 +51,7 @@
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
     "eslint-plugin-simple-import-sort": "^10.0.0",
-    "eslint-plugin-unicorn": "^48.0.1",
+    "eslint-plugin-unicorn": "^50.0.1",
     "lefthook": "^1.4.7",
     "typescript": "^5.1.6"
   },

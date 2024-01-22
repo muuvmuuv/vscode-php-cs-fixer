@@ -1,0 +1,9 @@
+{
+  "name": "muuvmuuv/test-project1",
+  "type": "project",
+  "license": "MIT",
+  "minimum-stability": "stable",
+  "require-dev": {
+    "friendsofphp/php-cs-fixer": "*"
+  }
+}

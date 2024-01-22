@@ -10,81 +10,95 @@ import {
   languages,
   Position,
   Range,
+  RelativePattern,
   TextDocument,
   TextEdit,
+  Uri,
   window,
   workspace,
   WorkspaceConfiguration,
+  WorkspaceFolder,
 } from 'vscode'
 
-let executable: string | undefined
-let config: string | undefined
+interface PathCacheKey {
+  workspaceFolder: WorkspaceFolder
+  pattern: string
+  excludePattern?: string
+}
+/** Stores file path in combination with its workspace. */
+const pathCache = new Map<PathCacheKey, Uri>()
+
 let extensionConfiguration!: WorkspaceConfiguration
 let cancellationToken: CancellationToken | undefined
 
 const log = window.createOutputChannel('PHP-CS-Fixer')
 
-async function findPhpCsFixerExecutable(): Promise<string> {
-  if (executable) {
-    return executable
+async function getWorkspaceFile(pattern: string, excludePattern?: string): Promise<Uri> {
+  const activeDocument = window.activeTextEditor!.document
+  const workspaceFolder = workspace.getWorkspaceFolder(activeDocument.uri)
+
+  if (!workspaceFolder) {
+    // TODO: Single file not supported yet.
+    window.showWarningMessage(
+      'PHP CS Fixer only works when a workspace is opened. Open a ticket, if you need support for single files.',
+    )
+    throw new Error('No workspace folder found.')
   }
 
-  const userExecutable = extensionConfiguration.get<string>('executable')
-  if (userExecutable) {
-    return (executable = userExecutable)
+  const cacheKey: PathCacheKey = { workspaceFolder, pattern, excludePattern }
+
+  if (pathCache.has(cacheKey)) {
+    return pathCache.get(cacheKey)!
   }
 
   try {
-    const executableName = 'php-cs-fixer' + (process.platform === 'win32' ? '.bat' : '')
+    const relativePattern = new RelativePattern(workspaceFolder, pattern)
+
     const files = await workspace.findFiles(
-      `**/vendor/bin/${executableName}`,
-      undefined,
+      relativePattern,
+      excludePattern,
       1,
       cancellationToken,
     )
 
     if (files.length === 0) {
-      throw new Error('No executable found.')
+      throw new Error('No file found.')
     }
+    const [file] = files
 
-    return (executable = files[0].fsPath)
+    pathCache.set(cacheKey, file)
+
+    return file
   } catch (error) {
     if (error instanceof Error) {
-      window.showErrorMessage('Failed searching for executable: ' + error.message)
+      window.showErrorMessage('Failed searching for file: ' + error.message)
     }
     throw error
   }
 }
 
-async function findPhpCsFixerConfig(): Promise<string> {
-  if (config) {
-    return config
+async function findPhpCsFixerExecutable(): Promise<string> {
+  const userExecutable = extensionConfiguration.get<string>('executable')
+  if (userExecutable) {
+    return userExecutable
   }
 
+  const executableName = 'php-cs-fixer' + (process.platform === 'win32' ? '.bat' : '')
+  const executablePattern = `**/vendor/bin/${executableName}`
+  const file = await getWorkspaceFile(executablePattern)
+
+  return file.fsPath
+}
+
+async function findPhpCsFixerConfig(): Promise<string> {
   const userConfig = extensionConfiguration.get<string>('config')
   if (userConfig) {
-    return (config = userConfig)
+    return userConfig
   }
 
-  try {
-    const files = await workspace.findFiles(
-      `**/.php-cs-fixer.php`,
-      '**/vendor/**',
-      1,
-      cancellationToken,
-    )
+  const file = await getWorkspaceFile('**/.php-cs-fixer.php', '**/vendor/**')
 
-    if (files.length === 0) {
-      throw new Error('No config found.')
-    }
-
-    return (config = files[0].fsPath)
-  } catch (error) {
-    if (error instanceof Error) {
-      window.showErrorMessage('Failed searching for config: ' + error.message)
-    }
-    throw error
-  }
+  return file.fsPath
 }
 
 async function provideDocumentFormattingEdits(
@@ -92,20 +106,15 @@ async function provideDocumentFormattingEdits(
   _?: FormattingOptions,
   token?: CancellationToken,
 ): Promise<TextEdit[] | undefined> {
-  if (
-    document.languageId !== 'php' ||
-    window.activeTextEditor === undefined ||
-    window.activeTextEditor.document !== document ||
-    cancellationToken !== undefined
-  ) {
+  if (document.languageId !== 'php' || cancellationToken !== undefined) {
     return
   }
 
   cancellationToken = token
-  extensionConfiguration = workspace.getConfiguration('php-cs-fixer')
 
   const phpCsFixerExecutable = await findPhpCsFixerExecutable()
   log.appendLine('PHP-CS-Fixer executable: ' + phpCsFixerExecutable)
+
   const phpCsFixerConfig = await findPhpCsFixerConfig()
   log.appendLine('PHP-CS-Fixer config: ' + phpCsFixerConfig)
 
@@ -156,10 +165,11 @@ async function provideDocumentFormattingEdits(
   } catch (error) {
     if (error instanceof Error) {
       window.showErrorMessage('Failed executing PHP CS Fixer: ' + error.message)
+      log.appendLine(error.message)
     }
     throw error
   } finally {
-    await fs.rm(temporaryFile, { force: true })
+    void fs.rm(temporaryFile, { force: true })
     cancellationToken = undefined
   }
 }
@@ -168,27 +178,25 @@ export function activate(context: ExtensionContext): void {
   extensionConfiguration = workspace.getConfiguration('php-cs-fixer')
 
   workspace.onDidChangeConfiguration((event) => {
-    if (event.affectsConfiguration('php-cs-fixer.executable')) {
-      executable = undefined
-    }
-    if (event.affectsConfiguration('php-cs-fixer.config')) {
-      config = undefined
+    if (event.affectsConfiguration('php-cs-fixer')) {
+      log.appendLine('Configuration changed. Updating...')
+      extensionConfiguration = workspace.getConfiguration('php-cs-fixer')
     }
   })
 
   context.subscriptions.push(
     commands.registerCommand('php-cs-fixer.fix', async () => {
-      const activeEditor = window.activeTextEditor
-      if (activeEditor) {
-        const document = activeEditor.document
-        const edits = await provideDocumentFormattingEdits(document)
-        if (edits) {
-          activeEditor.edit((editBuilder) => {
-            for (const edit of edits) editBuilder.replace(edit.range, edit.newText)
-          })
-        }
+      const document = window.activeTextEditor?.document
+      if (!document) {
+        window.showErrorMessage('No active document.')
+        return
       }
-      return
+      const edits = await provideDocumentFormattingEdits(document)
+      if (edits) {
+        window.activeTextEditor!.edit((editBuilder) => {
+          for (const edit of edits) editBuilder.replace(edit.range, edit.newText)
+        })
+      }
     }),
     languages.registerDocumentFormattingEditProvider(
       { language: 'php' },

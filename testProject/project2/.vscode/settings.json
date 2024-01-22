@@ -1,0 +1,11 @@
+{
+  "php-cs-fixer.allow-risky": true,
+  "[php]": {
+    "editor.defaultFormatter": "muuvmuuv.vscode-just-php-cs-fixer",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "never",
+      "source.organizeImports": "never"
+    }
+  }
+}
