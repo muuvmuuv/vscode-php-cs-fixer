@@ -1,30 +1,29 @@
-// https://code.visualstudio.com/docs/editor/debugging#_launch-configurations
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Run Extension",
-      "type": "extensionHost",
-      "request": "launch",
-      "args": [
-        "--disable-extension=muuvmuuv.vscode-just-php-cs-fixer",
-        "--extensionDevelopmentPath=${workspaceFolder}",
-        "${workspaceFolder}/testProject/project1"
-      ],
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "preLaunchTask": "${defaultBuildTask}"
-    },
-    {
-      "name": "Run Extension Workspaced",
-      "type": "extensionHost",
-      "request": "launch",
-      "args": [
-        "--disable-extension=muuvmuuv.vscode-just-php-cs-fixer",
-        "--extensionDevelopmentPath=${workspaceFolder}",
-        "${workspaceFolder}/testProject/testProject.code-workspace"
-      ],
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "preLaunchTask": "${defaultBuildTask}"
-    }
-  ]
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Run Extension",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--disable-extension=muuvmuuv.vscode-just-php-cs-fixer",
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"${workspaceFolder}/testProject/project1"
+			],
+			"outFiles": ["${workspaceFolder}/dist/**/*.js"],
+			"preLaunchTask": "${defaultBuildTask}"
+		},
+		{
+			"name": "Run Extension Workspaced",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--disable-extension=muuvmuuv.vscode-just-php-cs-fixer",
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"${workspaceFolder}/testProject/testProject.code-workspace"
+			],
+			"outFiles": ["${workspaceFolder}/dist/**/*.js"],
+			"preLaunchTask": "${defaultBuildTask}"
+		}
+	]
 }

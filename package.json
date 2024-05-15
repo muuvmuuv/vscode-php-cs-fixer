@@ -1,97 +1,85 @@
 {
-  "name": "vscode-just-php-cs-fixer",
-  "displayName": "PHP Formatter PHP-CS-Fixer",
-  "version": "1.0.0",
-  "description": "Run just PHP-CS-Fixer.",
-  "icon": "assets/logo.png",
-  "publisher": "muuvmuuv",
-  "qna": "https://github.com/muuvmuuv/vscode-php-cs-fixer/issues/new/choose",
-  "categories": [
-    "Formatters"
-  ],
-  "keywords": [
-    "php",
-    "php-cs-fixer",
-    "php-formatter",
-    "formatter",
-    "format",
-    "multi-root ready"
-  ],
-  "homepage": "https://github.com/muuvmuuv/vscode-php-cs-fixer",
-  "bugs": {
-    "url": "https://github.com/muuvmuuv/vscode-php-cs-fixer/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/muuvmuuv/vscode-php-cs-fixer.git"
-  },
-  "license": "GPLv3",
-  "author": {
-    "name": "Marvin Heilemann",
-    "email": "bloggt.raschelt.0m@icloud.com",
-    "url": "https://marvin.digital/"
-  },
-  "main": "dist/extension.js",
-  "scripts": {
-    "dev": "sh compile.sh --sourcemap --watch",
-    "compile": "sh compile.sh --sourcemap",
-    "package": "sh compile.sh --minify",
-    "lint": "eslint --cache --ext js,ts .",
-    "vscode:prepublish": "npm run package"
-  },
-  "devDependencies": {
-    "@commitlint/cli": "^18.4.4",
-    "@commitlint/config-conventional": "^18.4.4",
-    "@types/node": "^20",
-    "@types/vscode": "^1.74.3",
-    "@typescript-eslint/eslint-plugin": "^6.2.0",
-    "@typescript-eslint/parser": "^6.2.0",
-    "esbuild": "^0.19.4",
-    "eslint": "^8.45.0",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-prettier": "^5.0.0",
-    "eslint-plugin-simple-import-sort": "^10.0.0",
-    "eslint-plugin-unicorn": "^50.0.1",
-    "lefthook": "^1.4.7",
-    "typescript": "^5.1.6"
-  },
-  "engines": {
-    "vscode": "^1.74.3"
-  },
-  "activationEvents": [
-    "onLanguage:php",
-    "onCommand:php-cs-fixer.fix"
-  ],
-  "contributes": {
-    "configuration": {
-      "type": "object",
-      "title": "PHP-CS-Fixer Configurations",
-      "properties": {
-        "php-cs-fixer.executable": {
-          "type": "string",
-          "description": "The executable name or relative path."
-        },
-        "php-cs-fixer.config": {
-          "type": "string",
-          "description": "The config path."
-        },
-        "php-cs-fixer.allow-risky": {
-          "type": "boolean",
-          "default": false,
-          "description": "Allow risky rules."
-        }
-      }
-    },
-    "commands": [
-      {
-        "command": "php-cs-fixer.fix",
-        "title": "Format with PHP-CS-Fixer"
-      }
-    ]
-  },
-  "commitlint": {
-    "extends": [
-      "@commitlint/config-conventional"
-    ]
-  }
+	"name": "vscode-just-php-cs-fixer",
+	"displayName": "PHP Formatter PHP-CS-Fixer",
+	"version": "1.0.0",
+	"description": "Run just PHP-CS-Fixer.",
+	"icon": "assets/logo.png",
+	"publisher": "muuvmuuv",
+	"qna": "https://github.com/muuvmuuv/vscode-php-cs-fixer/issues/new/choose",
+	"categories": ["Formatters"],
+	"keywords": [
+		"php",
+		"php-cs-fixer",
+		"php-formatter",
+		"formatter",
+		"format",
+		"multi-root ready"
+	],
+	"homepage": "https://github.com/muuvmuuv/vscode-php-cs-fixer",
+	"bugs": {
+		"url": "https://github.com/muuvmuuv/vscode-php-cs-fixer/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/muuvmuuv/vscode-php-cs-fixer.git"
+	},
+	"license": "GPLv3",
+	"author": {
+		"name": "Marvin Heilemann",
+		"email": "bloggt.raschelt.0m@icloud.com",
+		"url": "https://marvin.digital/"
+	},
+	"main": "dist/extension.js",
+	"scripts": {
+		"dev": "sh compile.sh --sourcemap --watch",
+		"compile": "sh compile.sh --sourcemap",
+		"package": "sh compile.sh --minify",
+		"check": "biome check .",
+		"format": "biome check --apply .",
+		"vscode:prepublish": "npm run package"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.7.3",
+		"@commitlint/cli": "^19.3.0",
+		"@commitlint/config-conventional": "^19.2.2",
+		"@types/node": "^20",
+		"@types/vscode": "^1.74.3",
+		"esbuild": "^0.21.2",
+		"lefthook": "^1.4.7",
+		"typescript": "^5.1.6"
+	},
+	"engines": {
+		"vscode": "^1.74.3"
+	},
+	"activationEvents": ["onLanguage:php", "onCommand:php-cs-fixer.fix"],
+	"contributes": {
+		"configuration": {
+			"type": "object",
+			"title": "PHP-CS-Fixer Configurations",
+			"properties": {
+				"php-cs-fixer.executable": {
+					"type": "string",
+					"description": "The executable name or relative path."
+				},
+				"php-cs-fixer.config": {
+					"type": "string",
+					"description": "The config path."
+				},
+				"php-cs-fixer.allow-risky": {
+					"type": "boolean",
+					"default": false,
+					"description": "Allow risky rules."
+				}
+			}
+		},
+		"commands": [
+			{
+				"command": "php-cs-fixer.fix",
+				"title": "Format with PHP-CS-Fixer"
+			}
+		]
+	},
+	"commitlint": {
+		"extends": ["@commitlint/config-conventional"]
+	}
 }

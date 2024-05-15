@@ -1,10 +1,10 @@
 {
-  "folders": [
-    {
-      "path": "project1"
-    },
-    {
-      "path": "project2"
-    }
-  ]
+	"folders": [
+		{
+			"path": "project1",
+		},
+		{
+			"path": "project2",
+		},
+	],
 }

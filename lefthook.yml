@@ -2,9 +2,9 @@
 
 pre-commit:
   commands:
-    lint:
-      glob: "*.{js,ts}"
-      run: node_modules/.bin/eslint {staged_files}
+    check:
+      glob: "*.{js,ts,json}"
+      run: node_modules/.bin/biome check {staged_files}
 
 commit-msg:
   commands:
