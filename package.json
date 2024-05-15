@@ -1,7 +1,7 @@
 {
 	"name": "vscode-just-php-cs-fixer",
 	"displayName": "PHP Formatter PHP-CS-Fixer",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "Run just PHP-CS-Fixer.",
 	"icon": "assets/logo.png",
 	"publisher": "muuvmuuv",
@@ -44,7 +44,7 @@
 		"@commitlint/config-conventional": "^19.2.2",
 		"@types/node": "^20",
 		"@types/vscode": "^1.74.3",
-		"esbuild": "^0.21.2",
+		"esbuild": "^0.21.3",
 		"lefthook": "^1.4.7",
 		"typescript": "^5.1.6"
 	},
