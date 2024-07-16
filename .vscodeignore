@@ -1,10 +1,17 @@
 .vscode/**
+.github/**
 .vscode-test/**
 out/**
 node_modules/**
+testProject/**
 src/**
 .gitignore
 **/tsconfig.json
+**/biome.json
 **/*.map
+**/*.afphoto
 **/*.ts
+**/*.yaml
+**/*.yml
+*.mjs
 ./.*

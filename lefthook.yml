@@ -1,10 +1,8 @@
-# https://github.com/Arkweid/lefthook/blob/master/docs/full_guide.md
-
 pre-commit:
   commands:
     check:
-      glob: "*.{js,ts,json}"
-      run: node_modules/.bin/biome check {staged_files}
+      glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
+      run: node_modules/.bin/biome check --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
 
 commit-msg:
   commands:

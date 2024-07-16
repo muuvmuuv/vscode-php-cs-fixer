@@ -8,7 +8,7 @@
 			"args": [
 				"--disable-extension=muuvmuuv.vscode-just-php-cs-fixer",
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"${workspaceFolder}/testProject/project1"
+				"${workspaceFolder}/testProject/no-workspace"
 			],
 			"outFiles": ["${workspaceFolder}/dist/**/*.js"],
 			"preLaunchTask": "${defaultBuildTask}"
@@ -20,7 +20,7 @@
 			"args": [
 				"--disable-extension=muuvmuuv.vscode-just-php-cs-fixer",
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"${workspaceFolder}/testProject/testProject.code-workspace"
+				"${workspaceFolder}/testProject/ws-project.code-workspace"
 			],
 			"outFiles": ["${workspaceFolder}/dist/**/*.js"],
 			"preLaunchTask": "${defaultBuildTask}"

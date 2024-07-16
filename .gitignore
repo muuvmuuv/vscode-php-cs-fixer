@@ -4,7 +4,7 @@ node_modules/
 vendor/
 composer.lock
 tmp/
-.eslintcache
 *.vsix
 .env
 .*cache
+.vscode-test

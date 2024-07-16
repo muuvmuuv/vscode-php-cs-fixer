@@ -2,17 +2,36 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "Compile",
+			"label": "watch",
 			"type": "npm",
-			"script": "compile",
+			"script": "dev",
 			"isBackground": true,
 			"problemMatcher": {
 				"base": "$tsc-watch",
-				"applyTo": "allDocuments",
+				"severity": "error",
+				"applyTo": "closedDocuments",
+				"fileLocation": "relative",
+				"pattern": [
+					{
+						"regexp": "^[✘▲] \\[([A-Z]+)\\] (.+)",
+						"severity": 1,
+						"message": 2
+					},
+					{
+						"regexp": "^(?:\\t| {4})(?!\\s)([^:]+)(?::([0-9]+))?(?::([0-9]+))?:$",
+						"file": 1,
+						"line": 2,
+						"column": 3
+					}
+				],
 				"background": {
 					"activeOnStart": true,
-					"beginsPattern": "^.*Running",
-					"endsPattern": "^.*Done"
+					"beginsPattern": {
+						"regexp": "\\[watch\\] build started"
+					},
+					"endsPattern": {
+						"regexp": "\\[watch\\] build finished"
+					}
 				}
 			},
 			"presentation": {

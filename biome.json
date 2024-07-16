@@ -1,7 +1,7 @@
 {
 	"$schema": "https://biomejs.dev/schemas/1.7.3/schema.json",
 	"files": {
-		"ignore": ["testProject", "dist", "tmp", "assets"]
+		"ignore": ["testProject", "assets"]
 	},
 	"vcs": {
 		"enabled": true,
@@ -21,19 +21,22 @@
 		"attributePosition": "auto"
 	},
 	"linter": {
-		"enabled": true
+		"enabled": true,
+		"rules": {
+			"correctness": {
+				"noUnusedImports": "error"
+			}
+		}
 	},
 	"javascript": {
 		"formatter": {
 			"quoteProperties": "asNeeded",
-			"trailingComma": "all",
 			"semicolons": "asNeeded",
 			"arrowParentheses": "always",
 			"bracketSpacing": true,
 			"bracketSameLine": false,
 			"quoteStyle": "single",
 			"attributePosition": "auto"
-		},
-		"globals": []
+		}
 	}
 }
