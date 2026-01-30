@@ -36,7 +36,7 @@
 		"type": "git",
 		"url": "git+https://github.com/muuvmuuv/vscode-php-cs-fixer.git"
 	},
-	"license": "GPLv3",
+	"license": "GPL-3.0-only",
 	"author": {
 		"name": "Marvin Heilemann",
 		"email": "bloggt.raschelt.0m@icloud.com",
