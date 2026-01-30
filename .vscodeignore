@@ -1,33 +1,32 @@
-# Development files
+AGENTS.md
+AGENT.md
+CLAUDE.md
 .vscode/**
 .github/**
 .vscode-test/**
+.vscode-test.mjs
+.claude/**
+.release-it.json
 out/**
 node_modules/**
 testProject/**
 src/**
-
-# Config files
+dist/test/**
+dist/*.map
+assets/*.sketch
+assets/*.af
+assets/*.afphoto
+assets/banner.jpg
+assets/og-image.jpg
+assets/status-bar-icon.png
 .gitignore
-.npmrc
+.env
 .prototools
-tsconfig.json
+esbuild.js
 biome.json
+tsconfig.json
 lefthook.yml
-commitlint.config.*
-
-# Build files
-*.mjs
-**/*.map
-**/*.ts
-!dist/**
-
-# Source files
-**/*.afphoto
-
-# Documentation (dev only)
-AGENT.md
-
-# Dotfiles
-.*
-!.vscodeignore
+**/*cache
+**/*.yaml
+**/*.yml
+**/*.sh
