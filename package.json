@@ -2,9 +2,10 @@
 	"name": "vscode-just-php-cs-fixer",
 	"displayName": "PHP Formatter PHP-CS-Fixer",
 	"version": "1.2.0",
-	"description": "Run just PHP-CS-Fixer.",
+	"description": "Format PHP files with PHP-CS-Fixer. Lightweight, zero dependencies, auto-discovers config and executable.",
 	"icon": "assets/logo.png",
 	"publisher": "muuvmuuv",
+	"pricing": "Free",
 	"qna": "https://github.com/muuvmuuv/vscode-php-cs-fixer/issues/new/choose",
 	"categories": [
 		"Formatters"
@@ -12,11 +13,21 @@
 	"keywords": [
 		"php",
 		"php-cs-fixer",
-		"php-formatter",
 		"formatter",
 		"format",
+		"code style",
+		"psr-12",
+		"psr-2",
+		"symfony",
+		"laravel",
+		"coding standards",
+		"beautify",
 		"multi-root ready"
 	],
+	"galleryBanner": {
+		"color": "#6C7EB7",
+		"theme": "dark"
+	},
 	"homepage": "https://github.com/muuvmuuv/vscode-php-cs-fixer",
 	"bugs": {
 		"url": "https://github.com/muuvmuuv/vscode-php-cs-fixer/issues"
@@ -75,20 +86,30 @@
 	"contributes": {
 		"configuration": {
 			"type": "object",
-			"title": "PHP-CS-Fixer Configurations",
+			"title": "PHP-CS-Fixer",
 			"properties": {
 				"php-cs-fixer.executable": {
 					"type": "string",
-					"description": "The executable name or relative path."
+					"markdownDescription": "Path to the PHP-CS-Fixer executable. Leave empty to auto-discover from `vendor/bin/php-cs-fixer` or global PATH.",
+					"examples": [
+						"vendor/bin/php-cs-fixer",
+						"/usr/local/bin/php-cs-fixer",
+						"php-cs-fixer"
+					]
 				},
 				"php-cs-fixer.config": {
 					"type": "string",
-					"description": "The config path."
+					"markdownDescription": "Path to the PHP-CS-Fixer config file. Leave empty to auto-discover `.php-cs-fixer.php` or `.php-cs-fixer.dist.php` in your workspace.",
+					"examples": [
+						".php-cs-fixer.php",
+						".php-cs-fixer.dist.php",
+						"tools/php-cs-fixer.php"
+					]
 				},
 				"php-cs-fixer.allow-risky": {
 					"type": "boolean",
 					"default": false,
-					"description": "Allow risky rules."
+					"markdownDescription": "Allow [risky rules](https://cs.symfony.com/doc/rules/index.html#risky-rules) that may change code behavior. Use with caution."
 				}
 			}
 		}
