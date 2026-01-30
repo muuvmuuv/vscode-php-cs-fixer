@@ -1,4 +1,4 @@
-AGENTS.md
+# Development files
 .vscode/**
 .github/**
 .vscode-test/**
@@ -6,13 +6,28 @@ out/**
 node_modules/**
 testProject/**
 src/**
+
+# Config files
 .gitignore
-**/tsconfig.json
-**/biome.json
-**/*.map
-**/*.afphoto
-**/*.ts
-**/*.yaml
-**/*.yml
+.npmrc
+.prototools
+tsconfig.json
+biome.json
+lefthook.yml
+commitlint.config.*
+
+# Build files
 *.mjs
-./.*
+**/*.map
+**/*.ts
+!dist/**
+
+# Source files
+**/*.afphoto
+
+# Documentation (dev only)
+AGENT.md
+
+# Dotfiles
+.*
+!.vscodeignore
