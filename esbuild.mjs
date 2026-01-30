@@ -1,4 +1,4 @@
-import { mkdir, rmdir } from 'node:fs/promises'
+import { mkdir, rm } from 'node:fs/promises'
 import esbuild from 'esbuild'
 import pkg from './package.json' with { type: 'json' }
 
@@ -17,7 +17,7 @@ async function main() {
  * @pkg ${pkg.homepage}
  */`
 
-	await rmdir('./dist', { recursive: true })
+	await rm('./dist', { recursive: true, force: true })
 	await mkdir('./dist')
 
 	const ctx = await esbuild.context({

@@ -6,7 +6,9 @@
 	"icon": "assets/logo.png",
 	"publisher": "muuvmuuv",
 	"qna": "https://github.com/muuvmuuv/vscode-php-cs-fixer/issues/new/choose",
-	"categories": ["Formatters"],
+	"categories": [
+		"Formatters"
+	],
 	"keywords": [
 		"php",
 		"php-cs-fixer",
@@ -31,33 +33,35 @@
 	},
 	"main": "./dist/extension.js",
 	"scripts": {
-		"vscode:prepublish": "pnpm package",
+		"vscode:prepublish": "npm run package",
 		"dev": "node esbuild.mjs --watch",
 		"compile": "node esbuild.mjs",
 		"compile-source": "tsc",
 		"package": "node esbuild.mjs --production",
 		"check": "biome check .",
 		"format": "biome check --write .",
-		"pretest": "pnpm compile-source && pnpm compile",
+		"pretest": "npm run compile-source && npm run compile",
 		"test": "vscode-test"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^1.8.3",
-		"@commitlint/cli": "^19.3.0",
-		"@commitlint/config-conventional": "^19.2.2",
-		"@types/mocha": "^10.0.7",
-		"@types/node": "~20.14.10",
-		"@types/vscode": "^1.91.0",
-		"@vscode/test-cli": "^0.0.10",
-		"@vscode/test-electron": "^2.4.1",
-		"esbuild": "^0.23.0",
-		"lefthook": "^1.7.2",
-		"typescript": "^5.5.3"
+		"@biomejs/biome": "^2.3.13",
+		"@commitlint/cli": "^20.3.1",
+		"@commitlint/config-conventional": "^20.3.1",
+		"@types/mocha": "^10.0.10",
+		"@types/node": "^22.15.18",
+		"@types/vscode": "^1.108.1",
+		"@vscode/test-cli": "^0.0.12",
+		"@vscode/test-electron": "^2.5.2",
+		"esbuild": "^0.27.2",
+		"lefthook": "^2.0.16",
+		"typescript": "^5.9.3"
 	},
 	"engines": {
-		"vscode": "^1.91.0"
+		"vscode": "^1.108.0"
 	},
-	"activationEvents": ["onLanguage:php"],
+	"activationEvents": [
+		"onLanguage:php"
+	],
 	"contributes": {
 		"configuration": {
 			"type": "object",
@@ -80,6 +84,8 @@
 		}
 	},
 	"commitlint": {
-		"extends": ["@commitlint/config-conventional"]
+		"extends": [
+			"@commitlint/config-conventional"
+		]
 	}
 }
