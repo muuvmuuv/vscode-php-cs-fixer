@@ -1,3 +1,4 @@
+// https://code.visualstudio.com/docs/editor/tasks#vscode
 {
 	"version": "2.0.0",
 	"tasks": [
@@ -7,31 +8,16 @@
 			"script": "dev",
 			"isBackground": true,
 			"problemMatcher": {
-				"base": "$tsc-watch",
-				"severity": "error",
-				"applyTo": "closedDocuments",
+				"owner": "esbuild",
 				"fileLocation": "relative",
-				"pattern": [
-					{
-						"regexp": "^[✘▲] \\[([A-Z]+)\\] (.+)",
-						"severity": 1,
-						"message": 2
-					},
-					{
-						"regexp": "^(?:\\t| {4})(?!\\s)([^:]+)(?::([0-9]+))?(?::([0-9]+))?:$",
-						"file": 1,
-						"line": 2,
-						"column": 3
-					}
-				],
+				"pattern": {
+					"regexp": "^✘ \\[ERROR\\] (.*)$",
+					"message": 1
+				},
 				"background": {
 					"activeOnStart": true,
-					"beginsPattern": {
-						"regexp": "\\[watch\\] build started"
-					},
-					"endsPattern": {
-						"regexp": "\\[watch\\] build finished"
-					}
+					"beginsPattern": "^\\[watch\\] build started$",
+					"endsPattern": "^\\[watch\\] build finished$"
 				}
 			},
 			"presentation": {
@@ -41,6 +27,17 @@
 				"kind": "build",
 				"isDefault": true
 			}
+		},
+		{
+			"label": "compile",
+			"type": "npm",
+			"script": "compile",
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "silent",
+				"panel": "dedicated"
+			},
+			"group": "build"
 		}
 	]
 }

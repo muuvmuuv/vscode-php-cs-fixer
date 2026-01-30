@@ -1,11 +1,24 @@
 {
-  "php-cs-fixer.allow-risky": true,
-  "[php]": {
-    "editor.defaultFormatter": "muuvmuuv.vscode-just-php-cs-fixer",
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-      "source.fixAll": "never",
-      "source.organizeImports": "never"
-    }
-  }
+	"php-cs-fixer.allow-risky": true,
+	"[php]": {
+		"editor.defaultFormatter": "muuvmuuv.vscode-just-php-cs-fixer",
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.fixAll": "never",
+			"source.organizeImports": "never"
+		}
+	},
+	"github.copilot.enable": {
+		"*": false
+	},
+	"chat.agent.enabled": false,
+	"chat.commandCenter.enabled": false,
+	"workbench.enableExperiments": false,
+	"extensions.autoUpdate": false,
+	"update.mode": "none",
+	"telemetry.telemetryLevel": "off",
+	"chat.disableAIFeatures": true,
+	"git.enabled": false,
+	"git.autoRepositoryDetection": false,
+	"scm.providerCountBadge": "off"
 }

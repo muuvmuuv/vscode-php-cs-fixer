@@ -80,9 +80,7 @@ export class DocumentFormattingProvider implements DocumentFormattingEditProvide
 			log.appendLine(`Temp file: ${temporaryFile}`)
 
 			// Build command arguments
-			const allowRisky = workspace
-				.getConfiguration('php-cs-fixer')
-				.get<boolean>('allow-risky')
+			const allowRisky = workspace.getConfiguration('php-cs-fixer').get<boolean>('allow-risky')
 			const args = [
 				'fix',
 				'--using-cache=no',

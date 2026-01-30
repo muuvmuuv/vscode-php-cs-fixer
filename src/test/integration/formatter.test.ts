@@ -88,11 +88,7 @@ suite('Formatter Integration Tests', () => {
 
 			const { original, formatted } = await formatPhpContent('test.php', input)
 
-			assert.strictEqual(
-				formatted,
-				original,
-				'Already formatted code should remain unchanged',
-			)
+			assert.strictEqual(formatted, original, 'Already formatted code should remain unchanged')
 		})
 	})
 

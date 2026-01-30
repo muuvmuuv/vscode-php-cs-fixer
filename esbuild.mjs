@@ -1,12 +1,15 @@
-import { mkdir, rm } from 'node:fs/promises'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import esbuild from 'esbuild'
-import pkg from './package.json' with { type: 'json' }
 
-const production = process.argv.includes('--production')
-const watch = process.argv.includes('--watch')
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-async function main() {
-	const banner = `/**
+// Read package.json for metadata
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'))
+
+// Create banner with metadata
+const banner = `/**
  * ${pkg.displayName} (${pkg.name})
  *
  * ${pkg.description}
@@ -17,53 +20,105 @@ async function main() {
  * @pkg ${pkg.homepage}
  */`
 
-	await rm('./dist', { recursive: true, force: true })
-	await mkdir('./dist')
-
-	const ctx = await esbuild.context({
-		entryPoints: ['src/extension.ts'],
-		bundle: true,
-		format: 'cjs',
-		minify: production,
-		sourcemap: !production,
-		sourcesContent: false,
-		platform: 'node',
-		outfile: './dist/extension.js',
-		external: ['vscode'],
-		logLevel: 'silent',
-		banner: { js: banner },
-		plugins: [esbuildProblemMatcherPlugin],
-	})
-
-	if (watch) {
-		await ctx.watch()
-	} else {
-		await ctx.rebuild()
-		await ctx.dispose()
-	}
-}
+// Parse CLI arguments
+const production = process.argv.includes('--production')
+const watch = process.argv.includes('--watch')
 
 /**
- * So we can use VS Code debugger we need some log help.
- *
- * @see https://github.com/connor4312/esbuild-problem-matchers/blob/main/package.json#L51
+ * esbuild problem matcher plugin for watch mode.
+ * Logs build start/end events and formats errors for VS Code's problem matcher.
  *
  * @type {import('esbuild').Plugin}
  */
 const esbuildProblemMatcherPlugin = {
 	name: 'esbuild-problem-matcher',
+
 	setup(build) {
 		build.onStart(() => {
 			console.log('[watch] build started')
 		})
 		build.onEnd((result) => {
-			for (const { text, location } of result.errors) {
-				console.error(`✘ [ERROR] ${text}`)
-				console.error(`    ${location.file}:${location.line}:${location.column}:`)
+			if (result.errors.length > 0) {
+				result.errors.forEach(({ text, location }) => {
+					console.error(`✘ [ERROR] ${text}`)
+					if (location) {
+						console.error(`    ${location.file}:${location.line}:${location.column}:`)
+					}
+				})
 			}
 			console.log('[watch] build finished')
 		})
 	},
 }
 
-await main()
+async function main() {
+	console.log('  Running esbuild...')
+	console.log('  Production', production)
+	console.log('')
+	console.log(banner)
+	console.log('')
+
+	/** @type {import('esbuild').BuildOptions} */
+	const sharedOptions = {
+		bundle: true,
+		format: 'cjs',
+		minify: production,
+		sourcemap: !production,
+		sourcesContent: false,
+		platform: 'node',
+		external: ['vscode'],
+		logLevel: 'silent',
+		plugins: watch ? [esbuildProblemMatcherPlugin] : [],
+		metafile: true,
+	}
+
+	// Build main extension
+	const ctx = await esbuild.context({
+		...sharedOptions,
+		entryPoints: ['src/extension.ts'],
+		outfile: 'dist/extension.js',
+		banner: {
+			js: banner,
+		},
+	})
+
+	// Build test files (only in non-production)
+	const testCtx = !production
+		? await esbuild.context({
+				...sharedOptions,
+				entryPoints: ['src/test/unit/*.test.ts', 'src/test/integration/*.test.ts'],
+				outdir: 'dist/test',
+				external: ['vscode', 'mocha'],
+			})
+		: null
+
+	if (watch) {
+		await ctx.watch()
+		if (testCtx) await testCtx.watch()
+	} else {
+		const result = await ctx.rebuild()
+		await ctx.dispose()
+
+		if (testCtx) {
+			await testCtx.rebuild()
+			await testCtx.dispose()
+		}
+
+		// Print build information
+		if (result.metafile) {
+			const outputs = Object.entries(result.metafile.outputs)
+			for (const [file, info] of outputs) {
+				const size = (info.bytes / 1024).toFixed(1)
+				console.log(`  ${file}  ${size}kb`)
+			}
+		}
+
+		console.log('')
+		console.log(`⚡ Done`)
+	}
+}
+
+main().catch((e) => {
+	console.error(e)
+	process.exit(1)
+})

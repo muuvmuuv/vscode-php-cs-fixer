@@ -71,12 +71,7 @@ export async function getWorkspaceFile(
 
 	try {
 		const relativePattern = new RelativePattern(workspaceFolder, pattern)
-		const files = await workspace.findFiles(
-			relativePattern,
-			excludePattern,
-			1,
-			cancellationToken,
-		)
+		const files = await workspace.findFiles(relativePattern, excludePattern, 1, cancellationToken)
 
 		if (files.length === 0) {
 			log.appendLine(`No files found matching: ${pattern}`)
@@ -128,11 +123,7 @@ export async function findPhpCsFixerExecutable(
 	const executableName = `php-cs-fixer${executableExtension}`
 	const executablePattern = `**/vendor/bin/${executableName}`
 
-	const localExecutable = await getWorkspaceFile(
-		executablePattern,
-		undefined,
-		cancellationToken,
-	)
+	const localExecutable = await getWorkspaceFile(executablePattern, undefined, cancellationToken)
 	if (localExecutable) {
 		log.appendLine(`Found local executable: ${localExecutable.fsPath}`)
 		return localExecutable.fsPath
@@ -177,11 +168,7 @@ export async function findPhpCsFixerConfig(
 
 	// 2. Look for config file in workspace
 	// Try specific names first for better performance
-	const configPatterns = [
-		'.php-cs-fixer.php',
-		'.php-cs-fixer.dist.php',
-		'**/.php-cs-fixer*.php',
-	]
+	const configPatterns = ['.php-cs-fixer.php', '.php-cs-fixer.dist.php', '**/.php-cs-fixer*.php']
 
 	for (const pattern of configPatterns) {
 		const configFile = await getWorkspaceFile(pattern, '**/vendor/**', cancellationToken)
