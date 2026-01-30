@@ -3,11 +3,45 @@
 ## Overview
 
 **Name:** PHP Formatter PHP-CS-Fixer (`vscode-just-php-cs-fixer`)  
-**Version:** 1.2.0  
+**Version:** 1.4.0  
 **Author:** Marvin Heilemann (muuvmuuv)  
-**License:** GPLv3
+**License:** GPL-3.0-only
 
 A minimalist VS Code extension that integrates [PHP-CS-Fixer](https://github.com/PHP-CS-Fixer/PHP-CS-Fixer) as a document formatter for PHP files. Philosophy: "zero dependencies" - does one thing well without bundling PHP-CS-Fixer itself.
+
+## Important Guidelines
+
+### Git & Releases
+
+- **Do NOT commit without explicit approval** from the user
+- **Do NOT delete git tags** - if a tag was already created/pushed, create a new patch/minor version instead
+- Use conventional commits (enforced by commitlint)
+- Use SPDX-compliant license identifiers (e.g., `GPL-3.0-only`, not `GPLv3`)
+
+### VS Code Extension Constraints
+
+- **Must use npm** (not pnpm/yarn) - required for VS Code extensions
+- **CommonJS output required** - VS Code does not support ESM extensions yet
+- Use `spawn`/`exec` for external tools (allowed and standard practice)
+- Declare Workspace Trust capabilities when executing workspace code
+
+### TypeScript Configuration
+
+- Use `module: "ES2022"` with `moduleResolution: "bundler"` (no `.js` extensions needed)
+- esbuild handles bundling to CommonJS for VS Code runtime
+- Keep build scripts (esbuild.js, .vscode-test.js) as CommonJS
+
+### Biome Configuration
+
+- Use remote schema URL (not local node_modules) for `migrate` command compatibility
+- Enable `recommended: true` for linting rules
+- Exclude testProject from linting/formatting
+
+### Testing
+
+- Disable AI features, MCP, accounts, git, telemetry in test workspace settings
+- Use `--disable-extensions` and environment variables to prevent test hangs
+- Tests output to `dist/test/`, mark `mocha` as external in esbuild
 
 ## Key Features
 
@@ -31,23 +65,22 @@ vscode-php-cs-fixer/
 │   ├── cache.ts                   # Path caching system (string-keyed)
 │   ├── log.ts                     # Output channel logging
 │   └── test/
-│       └── extension.test.ts      # Integration tests
+│       ├── unit/                  # Unit tests (cache, exit codes)
+│       └── integration/           # Integration tests (formatting)
 ├── assets/
-│   ├── logo.png                   # Extension icon
-│   └── logo.afphoto               # Source design file
+│   └── logo.png                   # Extension icon
 ├── testProject/                   # Development test fixtures
 │   ├── no-workspace/              # Single folder test project
 │   ├── ws-project-1/              # Multi-root workspace folder 1
 │   ├── ws-project-2/              # Multi-root workspace folder 2
 │   └── ws-project.code-workspace  # Multi-root workspace config
-├── dist/                          # Bundled output (production)
-├── out/                           # TypeScript compiled output (tests)
+├── dist/                          # Bundled output (extension + tests)
 ├── package.json                   # Extension manifest
 ├── tsconfig.json                  # TypeScript config
-├── biome.json                     # Biome linter/formatter (v2)
-├── esbuild.mjs                    # Build script
-├── lefthook.yml                   # Git hooks
-└── .vscode-test.mjs               # Test runner config
+├── biome.json                     # Biome linter/formatter
+├── esbuild.js                     # Build script (CommonJS)
+├── .vscode-test.js                # Test runner config (CommonJS)
+└── lefthook.yml                   # Git hooks
 ```
 
 ## Source Files
@@ -97,17 +130,6 @@ Settings under `php-cs-fixer.*`:
 
 **Note:** `executable` and `config` are restricted in untrusted workspaces (Workspace Trust).
 
-Example usage:
-```json
-{
-    "php-cs-fixer.allow-risky": true,
-    "[php]": {
-        "editor.defaultFormatter": "muuvmuuv.vscode-just-php-cs-fixer",
-        "editor.formatOnSave": true
-    }
-}
-```
-
 ## Commands
 
 **None.** Integrates with VS Code's built-in formatting:
@@ -125,31 +147,27 @@ npm run compile      # One-time build
 npm run package      # Production build (minified)
 npm run check        # Biome lint check
 npm run format       # Biome format
-npm test             # Run tests
+npm test             # Run tests (unit + integration)
 ```
 
 ### Build System
 
-- **Bundler:** esbuild
-- **Entry:** `src/extension.ts`
-- **Output:** `dist/extension.js` (CommonJS)
-- **External:** `vscode` (provided by VS Code runtime)
+- **Bundler:** esbuild (CommonJS output)
+- **Entry:** `src/extension.ts` → `dist/extension.js`
+- **Tests:** `src/test/**/*.test.ts` → `dist/test/**/*.test.js`
+- **External:** `vscode`, `mocha` (provided at runtime)
 
 ### Code Quality
 
-- **Biome v2** - Linting and formatting
+- **Biome** - Linting (recommended rules) and formatting
 - **Commitlint** - Conventional commits
 - **Lefthook** - Git hooks (pre-commit, commit-msg)
 
 ### Testing
 
-- Framework: `@vscode/test-cli` + `@vscode/test-electron`
+- **Unit tests:** `dist/test/unit/*.test.js` - Cache, exit codes
+- **Integration tests:** `dist/test/integration/*.test.js` - Formatting in VS Code
 - Test workspace: `testProject/no-workspace`
-
-### Debug Configurations
-
-1. **Run Extension** - Opens `testProject/no-workspace`
-2. **Run Extension Workspaced** - Opens multi-root workspace
 
 ## Dependencies
 
@@ -179,19 +197,14 @@ npm test             # Run tests
 7. **Workspace Trust** - `executable` and `config` settings restricted in untrusted workspaces
 8. **Proper Exit Codes** - Handles PHP-CS-Fixer exit code 8 (files fixed) as success
 
-## Release Process (Manual)
+## Release Process
 
-1. Increment version in `package.json`
-2. Commit changes
-3. Build: `npm run package`
-4. Publish: `vsce publish`
+1. Update version in `package.json`
+2. Commit: `git commit -m "chore: release vX.Y.Z"`
+3. Tag: `git tag -a vX.Y.Z -m "vX.Y.Z\n\n## What's Changed\n..."`
+4. Publish: `npx @vscode/vsce publish`
 
-## Test Projects
-
-Each test project in `testProject/` contains:
-- Composer dependency on `friendsofphp/php-cs-fixer`
-- `.php-cs-fixer.php` with PSR-12 + Symfony rules
-- VS Code settings enabling the formatter
+**Note:** Ensure PAT (Personal Access Token) is valid before publishing.
 
 ## Quick Reference
 
@@ -211,3 +224,4 @@ Each test project in `testProject/` contains:
 2. **Executable not found**: Install via `composer require --dev friendsofphp/php-cs-fixer` or set `php-cs-fixer.executable`
 3. **Config not found**: Create `.php-cs-fixer.php` in project root or set `php-cs-fixer.config`
 4. **Untrusted workspace**: Grant trust or configure settings at user level
+5. **Tests hanging**: Ensure AI/MCP/accounts disabled in test settings
