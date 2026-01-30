@@ -62,6 +62,16 @@
 	"activationEvents": [
 		"onLanguage:php"
 	],
+	"capabilities": {
+		"untrustedWorkspaces": {
+			"supported": "limited",
+			"description": "This extension executes PHP-CS-Fixer from the workspace which could pose security risks in untrusted workspaces.",
+			"restrictedConfigurations": [
+				"php-cs-fixer.executable",
+				"php-cs-fixer.config"
+			]
+		}
+	},
 	"contributes": {
 		"configuration": {
 			"type": "object",

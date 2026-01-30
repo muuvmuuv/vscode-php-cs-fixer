@@ -1,4 +1,4 @@
-import { exec } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import fs from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -16,81 +16,170 @@ import {
 import { log } from './log'
 import { findPhpCsFixerConfig, findPhpCsFixerExecutable } from './utils'
 
+/**
+ * PHP-CS-Fixer exit codes:
+ * 0 - OK (no changes)
+ * 4 - Some files have invalid syntax (skipped)
+ * 8 - Some files were fixed
+ * 16 - Configuration error
+ * 32 - Fixer error
+ *
+ * Exit codes are combined with bitwise OR, so:
+ * - 0 = success, no changes
+ * - 8 = success, files were fixed
+ * - Other combinations indicate errors
+ */
+const EXIT_CODE_OK = 0
+const EXIT_CODE_CHANGED = 8
+
+function isSuccessExitCode(code: number): boolean {
+	// Success if no error bits are set (only 0 or 8)
+	return code === EXIT_CODE_OK || code === EXIT_CODE_CHANGED
+}
+
 export class DocumentFormattingProvider implements DocumentFormattingEditProvider {
 	readonly tmpDir = tmpdir()
 
 	constructor() {
+		log.appendLine(`PHP-CS-Fixer formatter initialized`)
 		log.appendLine(`Temporary directory: ${this.tmpDir}`)
 	}
 
 	async provideDocumentFormattingEdits(
 		document: TextDocument,
-		_?: FormattingOptions,
+		_options?: FormattingOptions,
 		token?: CancellationToken,
 	): Promise<TextEdit[] | undefined> {
 		if (document.languageId !== 'php') {
-			return
+			return undefined
 		}
 
+		log.appendLine('---')
+		log.appendLine(`Formatting: ${document.uri.fsPath}`)
+
+		// Find executable
 		const phpCsFixerExecutable = await findPhpCsFixerExecutable(token)
-		log.appendLine(`PHP-CS-Fixer executable: ${phpCsFixerExecutable}`)
+		if (!phpCsFixerExecutable) {
+			return undefined
+		}
+		log.appendLine(`Executable: ${phpCsFixerExecutable}`)
 
+		// Find config
 		const phpCsFixerConfig = await findPhpCsFixerConfig(token)
-		log.appendLine(`PHP-CS-Fixer config: ${phpCsFixerConfig}`)
+		if (!phpCsFixerConfig) {
+			return undefined
+		}
+		log.appendLine(`Config: ${phpCsFixerConfig}`)
 
-		log.appendLine(`Formatting with PHP-CS-Fixer ${document.uri.fsPath}`)
-
+		// Write document to temp file
 		const originalContents = document.getText()
 		const temporaryFile = path.resolve(this.tmpDir, `pcf-${Date.now()}.php`)
-		await fs.writeFile(temporaryFile, originalContents, 'utf8')
 
 		try {
-			const command = [
-				phpCsFixerExecutable,
+			await fs.writeFile(temporaryFile, originalContents, 'utf8')
+			log.appendLine(`Temp file: ${temporaryFile}`)
+
+			// Build command arguments
+			const allowRisky = workspace
+				.getConfiguration('php-cs-fixer')
+				.get<boolean>('allow-risky')
+			const args = [
 				'fix',
 				'--using-cache=no',
-				workspace.getConfiguration('php-cs-fixer').get('allow-risky')
-					? '--allow-risky=yes'
-					: '--allow-risky=no',
-				'-nq',
+				`--allow-risky=${allowRisky ? 'yes' : 'no'}`,
+				'-n', // non-interactive
+				'-q', // quiet
 				`--config=${phpCsFixerConfig}`,
 				temporaryFile,
 			]
-			const process = exec(command.join(' '), { encoding: 'utf8' })
 
-			token?.onCancellationRequested(() => {
+			log.appendLine(`Running: ${phpCsFixerExecutable} ${args.join(' ')}`)
+
+			// Execute PHP-CS-Fixer using spawn (handles paths with spaces correctly)
+			const result = await this.executePhpCsFixer(phpCsFixerExecutable, args, token)
+
+			if (!isSuccessExitCode(result.exitCode)) {
+				const errorMsg = result.stderr || `Exit code: ${result.exitCode}`
+				log.appendLine(`Error: ${errorMsg}`)
+				window.showErrorMessage(`PHP-CS-Fixer failed: ${errorMsg}`)
+				return undefined
+			}
+
+			// Read fixed content
+			const fixedContents = await fs.readFile(temporaryFile, 'utf8')
+
+			// Check if content changed
+			if (fixedContents === originalContents) {
+				log.appendLine('No changes needed')
+				return undefined
+			}
+
+			log.appendLine('File formatted successfully')
+
+			// Return edit to replace entire document
+			const lastLine = document.lineAt(document.lineCount - 1)
+			const range = new Range(new Position(0, 0), lastLine.range.end)
+
+			return [TextEdit.replace(range, fixedContents)]
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error)
+			log.appendLine(`Error: ${message}`)
+			window.showErrorMessage(`PHP-CS-Fixer error: ${message}`)
+			return undefined
+		} finally {
+			// Clean up temp file
+			try {
+				await fs.rm(temporaryFile, { force: true })
+			} catch {
+				// Ignore cleanup errors
+			}
+		}
+	}
+
+	private executePhpCsFixer(
+		executable: string,
+		args: string[],
+		token?: CancellationToken,
+	): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+		return new Promise((resolve) => {
+			const process = spawn(executable, args, {
+				shell: true, // Needed for Windows batch files and PATH resolution
+			})
+
+			let stdout = ''
+			let stderr = ''
+
+			process.stdout?.on('data', (data: Buffer) => {
+				stdout += data.toString()
+			})
+
+			process.stderr?.on('data', (data: Buffer) => {
+				stderr += data.toString()
+			})
+
+			// Handle cancellation
+			const cancelListener = token?.onCancellationRequested(() => {
+				log.appendLine('Formatting cancelled')
 				process.kill()
 			})
 
-			await new Promise<void>((resolve, reject) => {
-				let stderr = ''
-				process.stderr?.on('data', (data) => {
-					stderr += data
-				})
-				process.on('exit', (exitCode) => {
-					exitCode === 0 ? resolve() : reject(new Error(stderr))
+			process.on('close', (code) => {
+				cancelListener?.dispose()
+				resolve({
+					exitCode: code ?? 1,
+					stdout,
+					stderr,
 				})
 			})
 
-			const fixedContents = await fs.readFile(temporaryFile, 'utf8')
-			if (fixedContents === originalContents) {
-				return
-			}
-
-			const range = new Range(
-				new Position(0, 0),
-				document.lineAt(document.lineCount - 1).range.end,
-			)
-			const textEdit = TextEdit.replace(range, fixedContents)
-			return [textEdit]
-		} catch (error) {
-			if (error instanceof Error) {
-				window.showErrorMessage(`Failed executing PHP CS Fixer: ${error.message}`)
-				log.appendLine(error.message)
-			}
-			throw error
-		} finally {
-			void fs.rm(temporaryFile, { force: true })
-		}
+			process.on('error', (err) => {
+				cancelListener?.dispose()
+				resolve({
+					exitCode: 1,
+					stdout,
+					stderr: err.message,
+				})
+			})
+		})
 	}
 }
