@@ -1,9 +1,6 @@
-import fs from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import esbuild from 'esbuild'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const fs = require('node:fs')
+const path = require('node:path')
+const esbuild = require('esbuild')
 
 // Read package.json for metadata
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'))

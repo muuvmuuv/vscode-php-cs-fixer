@@ -4,7 +4,7 @@ CLAUDE.md
 .vscode/**
 .github/**
 .vscode-test/**
-.vscode-test.mjs
+.vscode-test.js
 .claude/**
 .release-it.json
 out/**
