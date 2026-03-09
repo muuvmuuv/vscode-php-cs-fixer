@@ -1,4 +1,3 @@
-import { spawn } from 'node:child_process'
 import fs from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -14,6 +13,7 @@ import {
 	workspace,
 } from 'vscode'
 import { log } from './log'
+import { executePhpCsFixer } from './process'
 import { findPhpCsFixerConfig, findPhpCsFixerExecutable } from './utils'
 
 /**
@@ -57,6 +57,13 @@ export class DocumentFormattingProvider implements DocumentFormattingEditProvide
 		log.appendLine('---')
 		log.appendLine(`Formatting: ${document.uri.fsPath}`)
 
+		// Resolve workspace folder for cwd
+		const workspaceFolder = workspace.getWorkspaceFolder(document.uri)
+		const cwd = workspaceFolder?.uri.fsPath
+		if (cwd) {
+			log.appendLine(`Working directory: ${cwd}`)
+		}
+
 		// Find executable
 		const phpCsFixerExecutable = await findPhpCsFixerExecutable(token)
 		if (!phpCsFixerExecutable) {
@@ -94,7 +101,7 @@ export class DocumentFormattingProvider implements DocumentFormattingEditProvide
 			log.appendLine(`Running: ${phpCsFixerExecutable} ${args.join(' ')}`)
 
 			// Execute PHP-CS-Fixer using spawn (handles paths with spaces correctly)
-			const result = await this.executePhpCsFixer(phpCsFixerExecutable, args, token)
+			const result = await executePhpCsFixer(phpCsFixerExecutable, args, cwd, token)
 
 			if (!isSuccessExitCode(result.exitCode)) {
 				const errorMsg = result.stderr || `Exit code: ${result.exitCode}`
@@ -132,52 +139,5 @@ export class DocumentFormattingProvider implements DocumentFormattingEditProvide
 				// Ignore cleanup errors
 			}
 		}
-	}
-
-	private executePhpCsFixer(
-		executable: string,
-		args: string[],
-		token?: CancellationToken,
-	): Promise<{ exitCode: number; stdout: string; stderr: string }> {
-		return new Promise((resolve) => {
-			const process = spawn(executable, args, {
-				shell: true, // Needed for Windows batch files and PATH resolution
-			})
-
-			let stdout = ''
-			let stderr = ''
-
-			process.stdout?.on('data', (data: Buffer) => {
-				stdout += data.toString()
-			})
-
-			process.stderr?.on('data', (data: Buffer) => {
-				stderr += data.toString()
-			})
-
-			// Handle cancellation
-			const cancelListener = token?.onCancellationRequested(() => {
-				log.appendLine('Formatting cancelled')
-				process.kill()
-			})
-
-			process.on('close', (code) => {
-				cancelListener?.dispose()
-				resolve({
-					exitCode: code ?? 1,
-					stdout,
-					stderr,
-				})
-			})
-
-			process.on('error', (err) => {
-				cancelListener?.dispose()
-				resolve({
-					exitCode: 1,
-					stdout,
-					stderr: err.message,
-				})
-			})
-		})
 	}
 }
