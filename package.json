@@ -1,7 +1,7 @@
 {
 	"name": "vscode-just-php-cs-fixer",
 	"displayName": "PHP Formatter PHP-CS-Fixer",
-	"version": "1.4.0",
+	"version": "1.4.1",
 	"description": "Format PHP files with PHP-CS-Fixer. Lightweight, zero dependencies, auto-discovers config and executable.",
 	"icon": "assets/logo.png",
 	"publisher": "muuvmuuv",
