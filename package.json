@@ -3,39 +3,26 @@
 	"displayName": "PHP Formatter PHP-CS-Fixer",
 	"version": "1.4.1",
 	"description": "Format PHP files with PHP-CS-Fixer. Lightweight, zero dependencies, auto-discovers config and executable.",
-	"icon": "assets/logo.png",
-	"publisher": "muuvmuuv",
-	"pricing": "Free",
-	"qna": "https://github.com/muuvmuuv/vscode-php-cs-fixer/issues/new/choose",
-
 	"categories": [
 		"Formatters"
 	],
 	"keywords": [
+		"beautify",
+		"code style",
+		"coding standards",
+		"format",
+		"formatter",
+		"laravel",
+		"multi-root ready",
 		"php",
 		"php-cs-fixer",
-		"formatter",
-		"format",
-		"code style",
 		"psr-12",
 		"psr-2",
-		"symfony",
-		"laravel",
-		"coding standards",
-		"beautify",
-		"multi-root ready"
+		"symfony"
 	],
-	"galleryBanner": {
-		"color": "#6C7EB7",
-		"theme": "dark"
-	},
 	"homepage": "https://github.com/muuvmuuv/vscode-php-cs-fixer",
 	"bugs": {
 		"url": "https://github.com/muuvmuuv/vscode-php-cs-fixer/issues"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/muuvmuuv/vscode-php-cs-fixer.git"
 	},
 	"license": "GPL-3.0-only",
 	"author": {
@@ -43,46 +30,43 @@
 		"email": "bloggt.raschelt.0m@icloud.com",
 		"url": "https://marvin.digital/"
 	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/muuvmuuv/vscode-php-cs-fixer.git"
+	},
+	"qna": "https://github.com/muuvmuuv/vscode-php-cs-fixer/issues/new/choose",
+	"publisher": "muuvmuuv",
 	"main": "./dist/extension.js",
 	"scripts": {
 		"dev": "node esbuild.js --watch",
 		"compile": "node esbuild.js",
 		"package": "node esbuild.js --production",
-		"check": "biome check .",
-		"format": "biome check . --write",
-		"pretest": "npm run compile",
+		"check": "oxlint && oxfmt --check",
+		"format": "oxlint --fix && oxfmt",
+		"pretest": "pnpm run compile",
 		"test": "vscode-test",
-		"vscode:prepublish": "npm run package",
+		"vscode:prepublish": "pnpm run package",
 		"release": "release-it"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.3.13",
 		"@commitlint/cli": "^20.3.1",
 		"@commitlint/config-conventional": "^20.3.1",
 		"@types/mocha": "^10.0.10",
 		"@types/node": "^22.15.18",
 		"@types/vscode": "^1.108.1",
 		"@vscode/test-cli": "^0.0.12",
-		"@vscode/test-electron": "^2.5.2",
+		"@vscode/test-electron": "^3.1.0",
 		"esbuild": "^0.27.2",
 		"lefthook": "^2.0.16",
-		"typescript": "^5.9.3"
+		"mocha": "^11.8.0",
+		"oxfmt": "^0.78.0",
+		"oxlint": "^1.93.0",
+		"tsrs": "0.25.0-ts7.1.0-beta"
 	},
-	"engines": {
-		"vscode": "^1.108.0"
-	},
-	"activationEvents": [
-		"onLanguage:php"
-	],
-	"capabilities": {
-		"untrustedWorkspaces": {
-			"supported": "limited",
-			"description": "This extension executes PHP-CS-Fixer from the workspace which could pose security risks in untrusted workspaces.",
-			"restrictedConfigurations": [
-				"php-cs-fixer.executable",
-				"php-cs-fixer.config"
-			]
-		}
+	"commitlint": {
+		"extends": [
+			"@commitlint/config-conventional"
+		]
 	},
 	"contributes": {
 		"configuration": {
@@ -115,9 +99,27 @@
 			}
 		}
 	},
-	"commitlint": {
-		"extends": [
-			"@commitlint/config-conventional"
-		]
-	}
+	"activationEvents": [
+		"onLanguage:php"
+	],
+	"icon": "assets/logo.png",
+	"galleryBanner": {
+		"color": "#6C7EB7",
+		"theme": "dark"
+	},
+	"engines": {
+		"vscode": "^1.108.0"
+	},
+	"packageManager": "pnpm@12.20.0",
+	"capabilities": {
+		"untrustedWorkspaces": {
+			"supported": "limited",
+			"description": "This extension executes PHP-CS-Fixer from the workspace which could pose security risks in untrusted workspaces.",
+			"restrictedConfigurations": [
+				"php-cs-fixer.executable",
+				"php-cs-fixer.config"
+			]
+		}
+	},
+	"pricing": "Free"
 }

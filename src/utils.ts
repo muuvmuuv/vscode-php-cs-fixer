@@ -34,7 +34,7 @@ async function commandExists(command: string): Promise<boolean> {
 export async function getWorkspaceFile(
 	pattern: string,
 	excludePattern?: string,
-	cancellationToken?: CancellationToken | undefined,
+	cancellationToken?: CancellationToken,
 ): Promise<Uri | undefined> {
 	log.appendLine(`Searching for workspace file: ${pattern}`)
 
@@ -84,7 +84,7 @@ export async function getWorkspaceFile(
 
 		return file
 	} catch (error) {
-		log.appendLine(`Error searching for file: ${error}`)
+		log.appendLine(`Error searching for file: ${String(error)}`)
 		return undefined
 	}
 }
@@ -97,7 +97,7 @@ export async function getWorkspaceFile(
  * 3. Global php-cs-fixer in PATH
  */
 export async function findPhpCsFixerExecutable(
-	cancellationToken?: CancellationToken | undefined,
+	cancellationToken?: CancellationToken,
 ): Promise<string | undefined> {
 	// 1. Check user-configured executable
 	const userExecutable = workspace.getConfiguration('php-cs-fixer').get<string>('executable')
@@ -150,7 +150,7 @@ export async function findPhpCsFixerExecutable(
  * 2. .php-cs-fixer.php or .php-cs-fixer.dist.php in workspace
  */
 export async function findPhpCsFixerConfig(
-	cancellationToken?: CancellationToken | undefined,
+	cancellationToken?: CancellationToken,
 ): Promise<string | undefined> {
 	// 1. Check user-configured config
 	const userConfig = workspace.getConfiguration('php-cs-fixer').get<string>('config')

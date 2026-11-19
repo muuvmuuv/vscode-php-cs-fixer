@@ -41,32 +41,32 @@ composer global require friendsofphp/php-cs-fixer
 
 ```json
 {
-  "[php]": {
-    "editor.defaultFormatter": "muuvmuuv.vscode-just-php-cs-fixer",
-    "editor.formatOnSave": true
-  }
+	"[php]": {
+		"editor.defaultFormatter": "muuvmuuv.vscode-just-php-cs-fixer",
+		"editor.formatOnSave": true
+	}
 }
 ```
 
 ## Configuration
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `php-cs-fixer.executable` | Auto-detect | Path to PHP-CS-Fixer executable |
-| `php-cs-fixer.config` | Auto-detect | Path to config file |
-| `php-cs-fixer.allow-risky` | `false` | Allow risky rules |
+| Setting                    | Default     | Description                     |
+| -------------------------- | ----------- | ------------------------------- |
+| `php-cs-fixer.executable`  | Auto-detect | Path to PHP-CS-Fixer executable |
+| `php-cs-fixer.config`      | Auto-detect | Path to config file             |
+| `php-cs-fixer.allow-risky` | `false`     | Allow risky rules               |
 
 ### Example Configuration
 
 ```json
 {
-  "php-cs-fixer.executable": "vendor/bin/php-cs-fixer",
-  "php-cs-fixer.config": ".php-cs-fixer.php",
-  "php-cs-fixer.allow-risky": true,
-  "[php]": {
-    "editor.defaultFormatter": "muuvmuuv.vscode-just-php-cs-fixer",
-    "editor.formatOnSave": true
-  }
+	"php-cs-fixer.executable": "vendor/bin/php-cs-fixer",
+	"php-cs-fixer.config": ".php-cs-fixer.php",
+	"php-cs-fixer.allow-risky": true,
+	"[php]": {
+		"editor.defaultFormatter": "muuvmuuv.vscode-just-php-cs-fixer",
+		"editor.formatOnSave": true
+	}
 }
 ```
 
@@ -108,29 +108,29 @@ Other PHP formatting extensions tend to be complex, bundle PHP-CS-Fixer themselv
 
 ### Common Issues
 
-| Issue | Solution |
-|-------|----------|
+| Issue                | Solution                                                                                        |
+| -------------------- | ----------------------------------------------------------------------------------------------- |
 | Executable not found | Install via `composer require --dev friendsofphp/php-cs-fixer` or set `php-cs-fixer.executable` |
-| Config not found | Create `.php-cs-fixer.php` in project root or set `php-cs-fixer.config` |
-| Untrusted workspace | Grant workspace trust or configure settings at user level |
+| Config not found     | Create `.php-cs-fixer.php` in project root or set `php-cs-fixer.config`                         |
+| Untrusted workspace  | Grant workspace trust or configure settings at user level                                       |
 
 ## Development
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Build
-npm run compile
+pnpm run compile
 
 # Watch mode
-npm run dev
+pnpm run dev
 
 # Run tests
-npm test
+pnpm test
 
 # Package
-npm run package
+pnpm run package
 ```
 
 ## License

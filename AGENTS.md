@@ -20,7 +20,7 @@ A minimalist VS Code extension that integrates [PHP-CS-Fixer](https://github.com
 
 ### VS Code Extension Constraints
 
-- **Must use npm** (not pnpm/yarn) - required for VS Code extensions
+- **Uses pnpm** - vsce cannot walk pnpm's `node_modules`, but esbuild inlines every dependency, so every `vsce package`/`publish` call passes `--no-dependencies`
 - **CommonJS output required** - VS Code does not support ESM extensions yet
 - Use `spawn`/`exec` for external tools (allowed and standard practice)
 - Declare Workspace Trust capabilities when executing workspace code
@@ -31,10 +31,11 @@ A minimalist VS Code extension that integrates [PHP-CS-Fixer](https://github.com
 - esbuild handles bundling to CommonJS for VS Code runtime
 - Keep build scripts (esbuild.js, .vscode-test.js) as CommonJS
 
-### Biome Configuration
+### Lint & Format Configuration
 
-- Use remote schema URL (not local node_modules) for `migrate` command compatibility
-- Enable `recommended: true` for linting rules
+- **oxlint** for linting (`.oxlintrc.json`), **oxfmt** for formatting (`.oxfmtrc.json`, respects `.editorconfig`)
+- Type-aware linting and type checking run inside oxlint on the **tsrs** backend (`typeAware`/`typeCheck`); there is no separate `tsc` step
+- tsconfig lists `types: ["node", "mocha"]` explicitly - TypeScript 7 no longer includes `@types/*` automatically
 - Exclude testProject from linting/formatting
 
 ### Testing
@@ -77,7 +78,8 @@ vscode-php-cs-fixer/
 ├── dist/                          # Bundled output (extension + tests)
 ├── package.json                   # Extension manifest
 ├── tsconfig.json                  # TypeScript config
-├── biome.json                     # Biome linter/formatter
+├── .oxlintrc.json                 # oxlint config (type-aware via tsrs)
+├── .oxfmtrc.json                  # oxfmt config
 ├── esbuild.js                     # Build script (CommonJS)
 ├── .vscode-test.js                # Test runner config (CommonJS)
 └── lefthook.yml                   # Git hooks
@@ -92,6 +94,7 @@ Minimal entry point that registers `DocumentFormattingProvider` for PHP language
 ### `src/formatter.ts` (Core Logic)
 
 `DocumentFormattingProvider` class workflow:
+
 1. Validate document is PHP
 2. Find PHP-CS-Fixer executable (user config > local vendor/bin > global PATH)
 3. Find PHP-CS-Fixer config (user config > workspace .php-cs-fixer*.php)
@@ -122,17 +125,18 @@ Dedicated "PHP-CS-Fixer" output channel for debugging.
 
 Settings under `php-cs-fixer.*`:
 
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `php-cs-fixer.executable` | `string` | auto-detect | Path to PHP-CS-Fixer executable |
-| `php-cs-fixer.config` | `string` | auto-detect | Path to config file |
-| `php-cs-fixer.allow-risky` | `boolean` | `false` | Enable risky rules |
+| Setting                    | Type      | Default     | Description                     |
+| -------------------------- | --------- | ----------- | ------------------------------- |
+| `php-cs-fixer.executable`  | `string`  | auto-detect | Path to PHP-CS-Fixer executable |
+| `php-cs-fixer.config`      | `string`  | auto-detect | Path to config file             |
+| `php-cs-fixer.allow-risky` | `boolean` | `false`     | Enable risky rules              |
 
 **Note:** `executable` and `config` are restricted in untrusted workspaces (Workspace Trust).
 
 ## Commands
 
 **None.** Integrates with VS Code's built-in formatting:
+
 - `Format Document` (Shift+Alt+F)
 - `Format Document With...`
 - `editor.formatOnSave`
@@ -142,12 +146,12 @@ Settings under `php-cs-fixer.*`:
 ### Scripts
 
 ```bash
-npm run dev          # Watch mode
-npm run compile      # One-time build
-npm run package      # Production build (minified)
-npm run check        # Biome lint check
-npm run format       # Biome format
-npm test             # Run tests (unit + integration)
+pnpm run dev          # Watch mode
+pnpm run compile      # One-time build
+pnpm run package      # Production build (minified)
+pnpm run check        # oxlint (incl. type check) and oxfmt check
+pnpm run format       # oxlint --fix and oxfmt
+pnpm test             # Run tests (unit + integration)
 ```
 
 ### Build System
@@ -159,7 +163,8 @@ npm test             # Run tests (unit + integration)
 
 ### Code Quality
 
-- **Biome** - Linting (recommended rules) and formatting
+- **oxlint** + **tsrs** - Linting, type-aware rules and type checking
+- **oxfmt** - Formatting
 - **Commitlint** - Conventional commits
 - **Lefthook** - Git hooks (pre-commit, commit-msg)
 
@@ -173,13 +178,14 @@ npm test             # Run tests (unit + integration)
 
 ### Dev Dependencies Only (Zero Runtime)
 
-| Package | Purpose |
-|---------|---------|
-| `@biomejs/biome` | Linting/formatting |
-| `@commitlint/cli` | Commit linting |
-| `@vscode/test-cli` | Test runner |
-| `esbuild` | Bundler |
-| `typescript` | Compiler |
+| Package            | Purpose        |
+| ------------------ | -------------- |
+| `oxlint`           | Linting        |
+| `tsrs`             | Type checking  |
+| `oxfmt`            | Formatting     |
+| `@commitlint/cli`  | Commit linting |
+| `@vscode/test-cli` | Test runner    |
+| `esbuild`          | Bundler        |
 
 ### External Requirements (User Must Install)
 
@@ -202,21 +208,21 @@ npm test             # Run tests (unit + integration)
 1. Update version in `package.json`
 2. Commit: `git commit -m "chore: release vX.Y.Z"`
 3. Tag: `git tag -a vX.Y.Z -m "vX.Y.Z\n\n## What's Changed\n..."`
-4. Publish: `npx @vscode/vsce publish`
+4. Publish: `pnpx @vscode/vsce publish --no-dependencies`
 
 **Note:** Ensure PAT (Personal Access Token) is valid before publishing.
 
 ## Quick Reference
 
-| Action | Command/Location |
-|--------|-----------------|
-| Build | `npm run compile` |
-| Package | `npm run package` |
-| Test | `npm test` |
-| Debug | F5 in VS Code |
-| Main logic | `src/formatter.ts` |
-| Config | `package.json` contributes section |
-| Logs | Output panel > "PHP-CS-Fixer" |
+| Action     | Command/Location                   |
+| ---------- | ---------------------------------- |
+| Build      | `pnpm run compile`                 |
+| Package    | `pnpm run package`                 |
+| Test       | `pnpm test`                        |
+| Debug      | F5 in VS Code                      |
+| Main logic | `src/formatter.ts`                 |
+| Config     | `package.json` contributes section |
+| Logs       | Output panel > "PHP-CS-Fixer"      |
 
 ## Troubleshooting
 
