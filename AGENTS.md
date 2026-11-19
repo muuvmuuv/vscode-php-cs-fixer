@@ -40,8 +40,8 @@ A minimalist VS Code extension that integrates [PHP-CS-Fixer](https://github.com
 
 ### Testing
 
-- Disable AI features, MCP, accounts, git, telemetry in test workspace settings
-- Use `--disable-extensions` and environment variables to prevent test hangs
+- Disable AI features, git and the welcome page in test workspace settings; application-scoped settings (`update.mode`, `telemetry.telemetryLevel`, …) do not work there
+- `.vscode-test.js` runs the instance with `--hidden-window` (no visible window, VS Code ≥1.147) and skips built-in AI, git and auth extensions via `VSCODE_SKIP_BUILTIN_EXTENSIONS`, since `--disable-extensions` only covers non-built-in ones
 - Tests output to `dist/test/`, mark `mocha` as external in esbuild
 
 ## Key Features

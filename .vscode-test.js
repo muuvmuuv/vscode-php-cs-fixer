@@ -1,5 +1,28 @@
 const { defineConfig } = require('@vscode/test-cli')
 
+const launchArgs = [
+	'--hidden-window',
+	'--disable-extensions',
+	'--disable-gpu',
+	'--disable-telemetry',
+	'--disable-workspace-trust',
+	'--sync=off',
+]
+
+const env = {
+	// --disable-extensions leaves built-in extensions running, and it overrides any
+	// --disable-extension list; this skips them at scan time instead
+	VSCODE_SKIP_BUILTIN_EXTENSIONS: [
+		'GitHub.copilot-chat',
+		'TypeScriptTeam.jsts-chat-features',
+		'vscode.git',
+		'vscode.git-base',
+		'vscode.github',
+		'vscode.github-authentication',
+		'vscode.microsoft-authentication',
+	].join(','),
+}
+
 module.exports = defineConfig([
 	{
 		label: 'unitTests',
@@ -8,6 +31,8 @@ module.exports = defineConfig([
 			ui: 'tdd',
 			timeout: 10000,
 		},
+		launchArgs,
+		env,
 	},
 	{
 		label: 'integrationTests',
@@ -17,21 +42,7 @@ module.exports = defineConfig([
 			ui: 'tdd',
 			timeout: 30000,
 		},
-		launchArgs: [
-			'--disable-extensions',
-			'--disable-gpu',
-			'--disable-telemetry',
-			'--disable-workspace-trust',
-			'--sync=off',
-		],
-		env: {
-			// Disable MCP registry
-			VSCODE_MCP_DISABLE: '1',
-			VSCODE_DISABLE_MCP: '1',
-			// Disable accounts/auth
-			VSCODE_DISABLE_ACCOUNTS: '1',
-			// Disable git
-			VSCODE_GIT_DISABLE: '1',
-		},
+		launchArgs,
+		env,
 	},
 ])
