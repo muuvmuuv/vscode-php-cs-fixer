@@ -47,26 +47,26 @@ A minimalist VS Code extension that integrates [PHP-CS-Fixer](https://github.com
 ## Key Features
 
 - Document formatting provider for PHP files
-- Single-folder and multi-root workspace support
-- Auto-discovers `vendor/bin/php-cs-fixer` executable (with global fallback)
-- Auto-discovers `.php-cs-fixer.php` and `.php-cs-fixer.dist.php` configuration files
+- Single-folder and multi-root workspace support (settings are resource-scoped)
+- Finds the nearest executable and config, walking up from the formatted file's folder to its workspace folder (monorepo-friendly); no config means PHP-CS-Fixer's default rules
 - Configurable risky rules support
-- Logging via VS Code Output Channel ("PHP-CS-Fixer")
-- Caches file lookups for performance (with validation)
-- Workspace Trust support (restricted mode for untrusted workspaces)
+- Language status item for PHP files: executable and config in use, or the problem
+- Logging via a `LogOutputChannel` ("PHP-CS-Fixer"); error notifications are shown once per message and session
+- Workspace Trust support: in Restricted Mode a workspace-local executable or config is never run
 
 ## File Structure
 
 ```
 vscode-php-cs-fixer/
 ├── src/                           # TypeScript source
-│   ├── extension.ts               # Entry point - registers formatter
+│   ├── extension.ts               # Entry point - registers formatter, status refresh
 │   ├── formatter.ts               # DocumentFormattingProvider implementation
-│   ├── utils.ts                   # File discovery (executable, config)
-│   ├── cache.ts                   # Path caching system (string-keyed)
-│   ├── log.ts                     # Output channel logging
+│   ├── utils.ts                   # Tool resolution (executable, config)
+│   ├── process.ts                 # Runs PHP-CS-Fixer (spawn)
+│   ├── status.ts                  # Language status item, notify-once errors
+│   ├── log.ts                     # LogOutputChannel
 │   └── test/
-│       ├── unit/                  # Unit tests (cache, exit codes)
+│       ├── unit/                  # Unit tests (tool resolution, process, exit codes)
 │       └── integration/           # Integration tests (formatting)
 ├── assets/
 │   └── logo.png                   # Extension icon
@@ -89,37 +89,43 @@ vscode-php-cs-fixer/
 
 ### `src/extension.ts` (Entry Point)
 
-Minimal entry point that registers `DocumentFormattingProvider` for PHP language.
+Registers `DocumentFormattingProvider` for PHP, the language status item, the internal `php-cs-fixer.showLog` command, and refreshes the status on editor, settings and trust changes.
 
 ### `src/formatter.ts` (Core Logic)
 
 `DocumentFormattingProvider` class workflow:
 
 1. Validate document is PHP
-2. Find PHP-CS-Fixer executable (user config > local vendor/bin > global PATH)
-3. Find PHP-CS-Fixer config (user config > workspace .php-cs-fixer*.php)
-4. Write document content to temp file (`/tmp/pcf-<timestamp>.php`)
-5. Execute via `spawn`: `php-cs-fixer fix --using-cache=no --allow-risky=yes|no -n -q --config=<config> <tempfile>`
-6. Handle exit codes correctly (0=no changes, 8=fixed, others=error)
-7. Read fixed content from temp file
-8. Return `TextEdit` replacing entire document
-9. Clean up temp file
+2. `resolveTools(document.uri)` - executable and config for this file; a problem is shown in the status item and notified once
+3. Write document content to a private temp dir (`mkdtemp`), keeping the file name (`psr_autoloading` compares it with the class name)
+4. Execute via `spawn`: `php-cs-fixer fix --using-cache=no --allow-risky=yes|no -n -q [--config=<config>] <tempfile>`
+5. Handle exit codes correctly (0=no changes, 8=fixed, others=error)
+6. Read fixed content from temp file
+7. Return `TextEdit` replacing entire document
+8. Remove the temp dir
 
-### `src/utils.ts` (File Discovery)
+### `src/utils.ts` (Tool Resolution)
 
-- `fileExists(path)` - Check if file is accessible
-- `commandExists(command)` - Check if command exists in PATH
-- `getWorkspaceFile(pattern, excludePattern?, token?)` - Find files in workspace with caching
-- `findPhpCsFixerExecutable(token?)` - Priority: user config > vendor/bin > global PATH
-- `findPhpCsFixerConfig(token?)` - Priority: user config > .php-cs-fixer.php > .php-cs-fixer.dist.php
+`resolveTools(uri)` searches the file's folder and its parents up to the workspace folder (filesystem root outside one), nearest first:
 
-### `src/cache.ts` (Caching)
+- Executable: `php-cs-fixer.executable` setting > Composer bin dir (`bin-dir`/`vendor-dir` from `composer.json`, else `vendor/bin`) > `tools/php-cs-fixer` (phive) > `php-cs-fixer` in PATH
+- Config: `php-cs-fixer.config` setting > `.php-cs-fixer.php` > `.php-cs-fixer.dist.php` > none (default rules)
+- Relative setting paths resolve against the file's workspace folder
+- Restricted Mode: a workspace-local executable or config yields a problem instead of being used
 
-String-keyed Map cache (`workspaceUri::pattern::excludePattern`). Validates cached paths still exist before returning.
+No caching: the walk is a handful of `fs.access` calls, and a fresh `composer install` is picked up at once.
+
+### `src/process.ts` (Process)
+
+Spawns without a shell, so paths with spaces stay one argument; only on Windows a shell runs Composer's `.bat` shims, with every argument quoted.
+
+### `src/status.ts` (Status)
+
+Language status item (`languages.createLanguageStatusItem`) for PHP and `notifyOnce()` for error notifications.
 
 ### `src/log.ts` (Logging)
 
-Dedicated "PHP-CS-Fixer" output channel for debugging.
+"PHP-CS-Fixer" `LogOutputChannel`; command lines and resolution details log at Debug level.
 
 ## User Configuration
 
@@ -135,7 +141,7 @@ Settings under `php-cs-fixer.*`:
 
 ## Commands
 
-**None.** Integrates with VS Code's built-in formatting:
+**None contributed.** The status item uses the internal `php-cs-fixer.showLog`. Integrates with VS Code's built-in formatting:
 
 - `Format Document` (Shift+Alt+F)
 - `Format Document With...`
@@ -170,7 +176,7 @@ pnpm test             # Run tests (unit + integration)
 
 ### Testing
 
-- **Unit tests:** `dist/test/unit/*.test.js` - Cache, exit codes
+- **Unit tests:** `dist/test/unit/*.test.js` - Tool resolution, process, exit codes
 - **Integration tests:** `dist/test/integration/*.test.js` - Formatting in VS Code
 - Test workspace: `testProject/no-workspace`
 
@@ -195,12 +201,12 @@ pnpm test             # Run tests (unit + integration)
 ## Architecture Decisions
 
 1. **Minimalist Design** - No bundled PHP-CS-Fixer, no custom commands
-2. **Multi-Root Workspace Support** - Cache is workspace-folder-aware
+2. **Multi-Root Workspace Support** - Tools resolve per file (nearest first); settings are resource-scoped
 3. **Graceful Degradation** - Auto-discovers executables/configs, falls back to global, shows helpful errors
-4. **Cross-Platform** - Handles Windows `.bat` extension, uses `spawn` with `shell: true`
+4. **Cross-Platform** - Handles Windows `.bat` shims (shell with quoted args there), spawns without a shell elsewhere
 5. **Cancellation Support** - Respects `CancellationToken`, kills process on cancel
 6. **Lazy Activation** - Only activates on `onLanguage:php`
-7. **Workspace Trust** - `executable` and `config` settings restricted in untrusted workspaces
+7. **Workspace Trust** - `executable` and `config` settings restricted in untrusted workspaces; a workspace-local executable or config is never run in Restricted Mode
 8. **Proper Exit Codes** - Handles PHP-CS-Fixer exit code 8 (files fixed) as success
 
 ## Release Process

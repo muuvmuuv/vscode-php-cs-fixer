@@ -21,12 +21,21 @@ suite('Process Unit Tests', () => {
 		})
 
 		test('should capture stderr output', async () => {
-			const result = await executePhpCsFixer('echo', ['error', '>&2'])
+			const result = await executePhpCsFixer('sh', ['-c', 'echo error >&2'])
 
 			assert.ok(
 				result.stderr.includes('error'),
 				`Expected stderr to contain "error", got: "${result.stderr}"`,
 			)
+		})
+
+		test('should pass arguments with spaces as one argument', async () => {
+			const result = await executePhpCsFixer('printf', [
+				'[%s]',
+				'/tmp/My Project/.php-cs-fixer.php',
+			])
+
+			assert.strictEqual(result.stdout, '[/tmp/My Project/.php-cs-fixer.php]')
 		})
 
 		test('should return non-zero exit code on failure', async () => {

@@ -1,186 +1,174 @@
-import { exec } from 'node:child_process'
+import { execFile } from 'node:child_process'
 import fs from 'node:fs/promises'
-import { type CancellationToken, RelativePattern, type Uri, window, workspace } from 'vscode'
-import { type PathCacheKey, pathCache } from './cache'
+import path from 'node:path'
+import { type Uri, workspace } from 'vscode'
 import { log } from './log'
 
-/**
- * Check if a file exists and is accessible
- */
-async function fileExists(path: string): Promise<boolean> {
+const isWindows = process.platform === 'win32'
+
+/** Composer and phive install Windows shims as `.bat` files. */
+const executableName = isWindows ? 'php-cs-fixer.bat' : 'php-cs-fixer'
+
+/** Config file names in the order PHP-CS-Fixer itself prefers them. */
+const configNames = ['.php-cs-fixer.php', '.php-cs-fixer.dist.php']
+
+/** PHP-CS-Fixer executable and config the formatter runs with for one file. */
+export interface Tools {
+	/** Executable path, or a command found in PATH. */
+	executable?: string
+	/** Config file; without one PHP-CS-Fixer applies its default rules. */
+	config?: string
+	/** Why PHP-CS-Fixer cannot run for this file, worded for the user. */
+	problem?: string
+}
+
+async function fileExists(file: string): Promise<boolean> {
 	try {
-		await fs.access(path)
+		await fs.access(file)
 		return true
 	} catch {
 		return false
 	}
 }
 
-/**
- * Check if a command exists in PATH
- */
 async function commandExists(command: string): Promise<boolean> {
 	return new Promise((resolve) => {
-		const checkCommand = process.platform === 'win32' ? 'where' : 'which'
-		exec(`${checkCommand} ${command}`, (error) => {
+		execFile(isWindows ? 'where' : 'which', [command], (error) => {
 			resolve(!error)
 		})
 	})
 }
 
-/**
- * Find a file in the workspace matching the given pattern
- */
-export async function getWorkspaceFile(
-	pattern: string,
-	excludePattern?: string,
-	cancellationToken?: CancellationToken,
-): Promise<Uri | undefined> {
-	log.appendLine(`Searching for workspace file: ${pattern}`)
-
-	if (!window.activeTextEditor) {
-		log.appendLine('No active text editor')
-		return undefined
-	}
-
-	const activeDocument = window.activeTextEditor.document
-	log.appendLine(`Active document: ${activeDocument.uri.fsPath}`)
-
-	const workspaceFolder = workspace.getWorkspaceFolder(activeDocument.uri)
-	if (!workspaceFolder) {
-		log.appendLine('No workspace folder found - single file mode not supported')
-		return undefined
-	}
-	log.appendLine(
-		`Workspace (${workspaceFolder.index}) '${workspaceFolder.name}': ${workspaceFolder.uri.fsPath}`,
-	)
-
-	const cacheKey: PathCacheKey = { workspaceFolder, pattern, excludePattern }
-
-	const cached = pathCache.get(cacheKey)
-	if (cached) {
-		// Verify cached file still exists
-		if (await fileExists(cached.fsPath)) {
-			log.appendLine(`Using cached path: ${cached.fsPath}`)
-			return cached
+async function findFirst(files: string[]): Promise<string | undefined> {
+	for (const file of files) {
+		if (await fileExists(file)) {
+			return file
 		}
-		// Cache is stale, remove it
-		log.appendLine(`Cached path no longer exists, removing: ${cached.fsPath}`)
-		pathCache.delete(cacheKey)
+	}
+	return undefined
+}
+
+/**
+ * Directories from the file's folder up to its workspace folder, nearest first. Files outside a
+ * workspace folder search up to the filesystem root.
+ */
+function searchDirectories(uri: Uri): string[] {
+	if (uri.scheme !== 'file') {
+		return []
 	}
 
+	const root = workspace.getWorkspaceFolder(uri)?.uri.fsPath
+	const directories: string[] = []
+	let directory = path.dirname(uri.fsPath)
+	for (;;) {
+		directories.push(directory)
+		const parent = path.dirname(directory)
+		if (directory === root || parent === directory) {
+			return directories
+		}
+		directory = parent
+	}
+}
+
+/** Composer's bin directory of a project folder, honoring `bin-dir` and `vendor-dir` in composer.json. */
+async function composerBinDir(directory: string): Promise<string> {
 	try {
-		const relativePattern = new RelativePattern(workspaceFolder, pattern)
-		const files = await workspace.findFiles(relativePattern, excludePattern, 1, cancellationToken)
-
-		if (files.length === 0) {
-			log.appendLine(`No files found matching: ${pattern}`)
-			return undefined
-		}
-
-		const [file] = files
-		log.appendLine(`Found file: ${file.fsPath}`)
-		pathCache.set(cacheKey, file)
-
-		return file
-	} catch (error) {
-		log.appendLine(`Error searching for file: ${String(error)}`)
-		return undefined
+		const composer = JSON.parse(
+			await fs.readFile(path.join(directory, 'composer.json'), 'utf8'),
+		) as { config?: { 'bin-dir'?: string; 'vendor-dir'?: string } }
+		const config = composer.config ?? {}
+		return path.join(
+			directory,
+			config['bin-dir'] ?? path.join(config['vendor-dir'] ?? 'vendor', 'bin'),
+		)
+	} catch {
+		return path.join(directory, 'vendor', 'bin')
 	}
 }
 
-/**
- * Find the PHP-CS-Fixer executable
- * Priority:
- * 1. User-configured path
- * 2. Local vendor/bin/php-cs-fixer
- * 3. Global php-cs-fixer in PATH
- */
-export async function findPhpCsFixerExecutable(
-	cancellationToken?: CancellationToken,
-): Promise<string | undefined> {
-	// 1. Check user-configured executable
-	const userExecutable = workspace.getConfiguration('php-cs-fixer').get<string>('executable')
-	if (userExecutable) {
-		log.appendLine(`Using user-configured executable: ${userExecutable}`)
-		// Validate it exists
-		if (await fileExists(userExecutable)) {
-			return userExecutable
+/** Resolve a path from settings; relative paths are relative to the file's workspace folder. */
+function resolveSetting(value: string, uri: Uri): string {
+	const root = workspace.getWorkspaceFolder(uri)?.uri.fsPath
+	return root && !path.isAbsolute(value) ? path.join(root, value) : value
+}
+
+async function findLocalExecutable(directories: string[]): Promise<string | undefined> {
+	for (const directory of directories) {
+		const executable = await findFirst([
+			path.join(await composerBinDir(directory), executableName),
+			path.join(directory, 'tools', executableName),
+		])
+		if (executable) {
+			return executable
 		}
-		// Maybe it's a command in PATH
-		if (await commandExists(userExecutable)) {
-			return userExecutable
-		}
-		log.appendLine(`User-configured executable not found: ${userExecutable}`)
-		window.showErrorMessage(
-			`PHP-CS-Fixer executable not found: ${userExecutable}. Please check your settings.`,
-		)
-		return undefined
 	}
-
-	// 2. Look for local vendor/bin/php-cs-fixer
-	const executableExtension = process.platform === 'win32' ? '.bat' : ''
-	const executableName = `php-cs-fixer${executableExtension}`
-	const executablePattern = `**/vendor/bin/${executableName}`
-
-	const localExecutable = await getWorkspaceFile(executablePattern, undefined, cancellationToken)
-	if (localExecutable) {
-		log.appendLine(`Found local executable: ${localExecutable.fsPath}`)
-		return localExecutable.fsPath
-	}
-
-	// 3. Fall back to global php-cs-fixer
-	log.appendLine('Local executable not found, checking for global php-cs-fixer...')
-	if (await commandExists('php-cs-fixer')) {
-		log.appendLine('Found global php-cs-fixer in PATH')
-		return 'php-cs-fixer'
-	}
-
-	log.appendLine('No PHP-CS-Fixer executable found')
-	window.showErrorMessage(
-		'PHP-CS-Fixer executable not found. Install it via Composer (vendor/bin/php-cs-fixer) or globally.',
-	)
 	return undefined
 }
 
 /**
- * Find the PHP-CS-Fixer configuration file
- * Priority:
- * 1. User-configured path
- * 2. .php-cs-fixer.php or .php-cs-fixer.dist.php in workspace
+ * Resolve the PHP-CS-Fixer executable and config for a file. The nearest match wins, so each
+ * package of a monorepo uses its own.
+ *
+ * Executable: `php-cs-fixer.executable` setting, else Composer's bin dir or `tools/` (phive) in
+ * the file's folder and its parents up to the workspace folder, else `php-cs-fixer` in PATH.
+ *
+ * Config: `php-cs-fixer.config` setting, else `.php-cs-fixer.php` or `.php-cs-fixer.dist.php` in
+ * the same folders, else none.
+ *
+ * In Restricted Mode an executable or config found in the workspace is not used, as both are code
+ * from the workspace.
  */
-export async function findPhpCsFixerConfig(
-	cancellationToken?: CancellationToken,
-): Promise<string | undefined> {
-	// 1. Check user-configured config
-	const userConfig = workspace.getConfiguration('php-cs-fixer').get<string>('config')
-	if (userConfig) {
-		log.appendLine(`Using user-configured config: ${userConfig}`)
-		if (await fileExists(userConfig)) {
-			return userConfig
+export async function resolveTools(uri: Uri): Promise<Tools> {
+	const settings = workspace.getConfiguration('php-cs-fixer', uri)
+	const directories = searchDirectories(uri)
+	const restricted =
+		'This workspace is in Restricted Mode. Trust it to run its own PHP-CS-Fixer and config.'
+
+	let executable: string | undefined
+	const executableSetting = settings.get<string>('executable')
+	if (executableSetting) {
+		const resolved = resolveSetting(executableSetting, uri)
+		if (await fileExists(resolved)) {
+			executable = resolved
+		} else if (await commandExists(executableSetting)) {
+			executable = executableSetting
+		} else {
+			return {
+				problem: `PHP-CS-Fixer executable not found: ${executableSetting}. Check the php-cs-fixer.executable setting.`,
+			}
 		}
-		log.appendLine(`User-configured config not found: ${userConfig}`)
-		window.showErrorMessage(
-			`PHP-CS-Fixer config not found: ${userConfig}. Please check your settings.`,
+	} else {
+		const local = await findLocalExecutable(directories)
+		if (local && !workspace.isTrusted) {
+			return { problem: restricted }
+		}
+		executable = local ?? ((await commandExists('php-cs-fixer')) ? 'php-cs-fixer' : undefined)
+		if (!executable) {
+			return {
+				problem:
+					'PHP-CS-Fixer not found. Install it with Composer (vendor/bin/php-cs-fixer) or globally.',
+			}
+		}
+	}
+
+	let config: string | undefined
+	const configSetting = settings.get<string>('config')
+	if (configSetting) {
+		config = resolveSetting(configSetting, uri)
+		if (!(await fileExists(config))) {
+			return {
+				problem: `PHP-CS-Fixer config not found: ${configSetting}. Check the php-cs-fixer.config setting.`,
+			}
+		}
+	} else {
+		config = await findFirst(
+			directories.flatMap((directory) => configNames.map((name) => path.join(directory, name))),
 		)
-		return undefined
-	}
-
-	// 2. Look for config file in workspace
-	// Try specific names first for better performance
-	const configPatterns = ['.php-cs-fixer.php', '.php-cs-fixer.dist.php', '**/.php-cs-fixer*.php']
-
-	for (const pattern of configPatterns) {
-		const configFile = await getWorkspaceFile(pattern, '**/vendor/**', cancellationToken)
-		if (configFile) {
-			log.appendLine(`Found config file: ${configFile.fsPath}`)
-			return configFile.fsPath
+		if (config && !workspace.isTrusted) {
+			return { problem: restricted }
 		}
 	}
 
-	log.appendLine('No PHP-CS-Fixer config found')
-	window.showErrorMessage(
-		'PHP-CS-Fixer config not found. Create a .php-cs-fixer.php file in your project root.',
-	)
-	return undefined
+	log.debug(`Executable: ${executable}, config: ${config ?? 'none (default rules)'}`)
+	return { executable, config }
 }

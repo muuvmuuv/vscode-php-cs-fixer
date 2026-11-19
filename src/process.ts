@@ -23,28 +23,29 @@ export function executePhpCsFixer(
 	token?: CancellationToken,
 ): Promise<ProcessResult> {
 	return new Promise((resolve) => {
-		const process = spawn(executable, args, {
-			shell: true, // Needed for Windows batch files and PATH resolution
-			cwd, // Run in workspace folder so PHP-CS-Fixer resolves composer.json correctly
-		})
+		// Composer's Windows shims are .bat files, which need a shell; the shell joins arguments
+		// unescaped, so they are quoted there. Elsewhere spawn directly so paths with spaces stay intact.
+		const child =
+			process.platform === 'win32'
+				? spawn([executable, ...args].map((arg) => `"${arg}"`).join(' '), { shell: true, cwd })
+				: spawn(executable, args, { cwd })
 
 		let stdout = ''
 		let stderr = ''
 
-		process.stdout?.on('data', (data: Buffer) => {
+		child.stdout?.on('data', (data: Buffer) => {
 			stdout += data.toString()
 		})
 
-		process.stderr?.on('data', (data: Buffer) => {
+		child.stderr?.on('data', (data: Buffer) => {
 			stderr += data.toString()
 		})
 
-		// Handle cancellation
 		const cancelListener = token?.onCancellationRequested(() => {
-			process.kill()
+			child.kill()
 		})
 
-		process.on('close', (code) => {
+		child.on('close', (code) => {
 			cancelListener?.dispose()
 			resolve({
 				exitCode: code ?? 1,
@@ -53,7 +54,7 @@ export function executePhpCsFixer(
 			})
 		})
 
-		process.on('error', (err) => {
+		child.on('error', (err) => {
 			cancelListener?.dispose()
 			resolve({
 				exitCode: 1,

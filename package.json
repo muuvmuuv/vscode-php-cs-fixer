@@ -75,26 +75,29 @@
 			"properties": {
 				"php-cs-fixer.executable": {
 					"type": "string",
-					"markdownDescription": "Path to the PHP-CS-Fixer executable. Leave empty to auto-discover from `vendor/bin/php-cs-fixer` or global PATH.",
+					"markdownDescription": "Path to the PHP-CS-Fixer executable, relative to the workspace folder or absolute. Leave empty to use the nearest Composer bin dir (`vendor/bin`, or `bin-dir` from `composer.json`) or `tools/php-cs-fixer`, else `php-cs-fixer` in PATH.",
 					"examples": [
 						"vendor/bin/php-cs-fixer",
 						"/usr/local/bin/php-cs-fixer",
 						"php-cs-fixer"
-					]
+					],
+					"scope": "resource"
 				},
 				"php-cs-fixer.config": {
 					"type": "string",
-					"markdownDescription": "Path to the PHP-CS-Fixer config file. Leave empty to auto-discover `.php-cs-fixer.php` or `.php-cs-fixer.dist.php` in your workspace.",
+					"markdownDescription": "Path to the PHP-CS-Fixer config file, relative to the workspace folder or absolute. Leave empty to use the nearest `.php-cs-fixer.php` or `.php-cs-fixer.dist.php`; without one, PHP-CS-Fixer applies its default rules.",
 					"examples": [
 						".php-cs-fixer.php",
 						".php-cs-fixer.dist.php",
 						"tools/php-cs-fixer.php"
-					]
+					],
+					"scope": "resource"
 				},
 				"php-cs-fixer.allow-risky": {
 					"type": "boolean",
 					"default": false,
-					"markdownDescription": "Allow [risky rules](https://cs.symfony.com/doc/rules/index.html#risky-rules) that may change code behavior. Use with caution."
+					"markdownDescription": "Allow [risky rules](https://cs.symfony.com/doc/rules/index.html#risky-rules) that may change code behavior. Use with caution.",
+					"scope": "resource"
 				}
 			}
 		}

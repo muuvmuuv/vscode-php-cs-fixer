@@ -153,4 +153,30 @@ suite('Formatter Integration Tests', () => {
 			assert.ok(formatted.includes('"Hello\\nWorld"'), 'Should preserve escaped characters')
 		})
 	})
+
+	suite('Without Config', () => {
+		test('should format an untitled file with the default rules', async () => {
+			const settings = vscode.workspace.getConfiguration('php-cs-fixer')
+			const executable = vscode.Uri.joinPath(workspaceFolder.uri, 'vendor', 'bin', 'php-cs-fixer')
+			await settings.update('executable', executable.fsPath, vscode.ConfigurationTarget.Global)
+
+			try {
+				// An untitled file has no folder to search, so neither the project's config nor its tab
+				// indentation applies
+				const document = await vscode.workspace.openTextDocument({
+					language: 'php',
+					content: '<?php\n$a = array(1,2);\nif($a){echo "x";}\n',
+				})
+				await vscode.window.showTextDocument(document)
+				await vscode.commands.executeCommand('editor.action.formatDocument')
+
+				assert.strictEqual(
+					document.getText(),
+					'<?php\n\n$a = array(1,2);\nif ($a) {\n    echo "x";\n}\n',
+				)
+			} finally {
+				await settings.update('executable', undefined, vscode.ConfigurationTarget.Global)
+			}
+		})
+	})
 })

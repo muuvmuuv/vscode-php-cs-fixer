@@ -11,10 +11,11 @@ A lightweight VS Code extension that formats PHP files using [PHP-CS-Fixer](http
 ## Features
 
 - Formats PHP files on demand or on save
-- Auto-discovers `vendor/bin/php-cs-fixer` or falls back to global installation
-- Auto-discovers `.php-cs-fixer.php` or `.php-cs-fixer.dist.php` config files
-- Multi-root workspace support
-- Workspace Trust support for security
+- Finds the nearest PHP-CS-Fixer: Composer's bin dir (honors `bin-dir`), `tools/` (phive), or a global installation
+- Finds the nearest `.php-cs-fixer.php` or `.php-cs-fixer.dist.php`, so each package of a monorepo uses its own; without one, PHP-CS-Fixer's default rules apply
+- Shows the PHP-CS-Fixer and config in use, or why it cannot run, in the language status of PHP files
+- Multi-root workspace support, with per-folder settings
+- Workspace Trust support: in Restricted Mode the workspace's own PHP-CS-Fixer and config are not run
 - Minimal footprint (~4 KB bundled)
 
 ## Requirements
@@ -36,7 +37,7 @@ composer global require friendsofphp/php-cs-fixer
 
 1. Install this extension from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=muuvmuuv.vscode-just-php-cs-fixer)
 2. Install PHP-CS-Fixer via Composer
-3. Create a `.php-cs-fixer.php` config file in your project root
+3. Optionally create a `.php-cs-fixer.php` config file in your project root
 4. Set this extension as your default PHP formatter:
 
 ```json
@@ -55,6 +56,8 @@ composer global require friendsofphp/php-cs-fixer
 | `php-cs-fixer.executable`  | Auto-detect | Path to PHP-CS-Fixer executable |
 | `php-cs-fixer.config`      | Auto-detect | Path to config file             |
 | `php-cs-fixer.allow-risky` | `false`     | Allow risky rules               |
+
+Relative paths are resolved against the workspace folder of the file being formatted.
 
 ### Example Configuration
 
@@ -102,16 +105,15 @@ Other PHP formatting extensions tend to be complex, bundle PHP-CS-Fixer themselv
 
 ### Formatting not working?
 
-1. Open the Output panel (`View > Output`)
-2. Select "PHP-CS-Fixer" from the dropdown
-3. Check the logs for errors
+1. Hover the `{}` language status in the status bar of a PHP file: it names the PHP-CS-Fixer and config in use, or the problem
+2. Click "Show Log" there (or open "PHP-CS-Fixer" in the Output panel) for details; set the log level to Debug for the full command line
 
 ### Common Issues
 
 | Issue                | Solution                                                                                        |
 | -------------------- | ----------------------------------------------------------------------------------------------- |
 | Executable not found | Install via `composer require --dev friendsofphp/php-cs-fixer` or set `php-cs-fixer.executable` |
-| Config not found     | Create `.php-cs-fixer.php` in project root or set `php-cs-fixer.config`                         |
+| Config not found     | The file set in `php-cs-fixer.config` does not exist; fix the path or remove the setting        |
 | Untrusted workspace  | Grant workspace trust or configure settings at user level                                       |
 
 ## Development

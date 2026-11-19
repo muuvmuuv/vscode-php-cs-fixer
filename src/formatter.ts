@@ -9,12 +9,12 @@ import {
 	Range,
 	type TextDocument,
 	TextEdit,
-	window,
 	workspace,
 } from 'vscode'
 import { log } from './log'
 import { executePhpCsFixer } from './process'
-import { findPhpCsFixerConfig, findPhpCsFixerExecutable } from './utils'
+import { notifyOnce, showProblem, showTools } from './status'
+import { resolveTools } from './utils'
 
 /**
  * PHP-CS-Fixer exit codes:
@@ -37,14 +37,8 @@ function isSuccessExitCode(code: number): boolean {
 	return code === EXIT_CODE_OK || code === EXIT_CODE_CHANGED
 }
 
+/** Formats PHP documents by running PHP-CS-Fixer on a temporary copy; registered in `activate()`. */
 export class DocumentFormattingProvider implements DocumentFormattingEditProvider {
-	readonly tmpDir = tmpdir()
-
-	constructor() {
-		log.appendLine(`PHP-CS-Fixer formatter initialized`)
-		log.appendLine(`Temporary directory: ${this.tmpDir}`)
-	}
-
 	async provideDocumentFormattingEdits(
 		document: TextDocument,
 		_options?: FormattingOptions,
@@ -54,90 +48,73 @@ export class DocumentFormattingProvider implements DocumentFormattingEditProvide
 			return undefined
 		}
 
-		log.appendLine('---')
-		log.appendLine(`Formatting: ${document.uri.fsPath}`)
+		log.info(`Formatting: ${document.uri.fsPath}`)
 
-		// Resolve workspace folder for cwd
-		const workspaceFolder = workspace.getWorkspaceFolder(document.uri)
-		const cwd = workspaceFolder?.uri.fsPath
-		if (cwd) {
-			log.appendLine(`Working directory: ${cwd}`)
-		}
-
-		// Find executable
-		const phpCsFixerExecutable = await findPhpCsFixerExecutable(token)
-		if (!phpCsFixerExecutable) {
+		const tools = await resolveTools(document.uri)
+		showTools(tools)
+		if (tools.problem || !tools.executable) {
+			notifyOnce(tools.problem ?? 'PHP-CS-Fixer not found.')
 			return undefined
 		}
-		log.appendLine(`Executable: ${phpCsFixerExecutable}`)
 
-		// Find config
-		const phpCsFixerConfig = await findPhpCsFixerConfig(token)
-		if (!phpCsFixerConfig) {
-			return undefined
-		}
-		log.appendLine(`Config: ${phpCsFixerConfig}`)
-
-		// Write document to temp file
+		const cwd = workspace.getWorkspaceFolder(document.uri)?.uri.fsPath
 		const originalContents = document.getText()
-		const temporaryFile = path.resolve(this.tmpDir, `pcf-${Date.now()}.php`)
+
+		// PHP-CS-Fixer looks for a config next to the file it fixes, so a private directory keeps it
+		// from loading one planted in the shared temp dir when the project has none
+		const temporaryDir = await fs.mkdtemp(path.join(tmpdir(), 'php-cs-fixer-'))
+		// Keep the file name: rules such as psr_autoloading compare it with the class name
+		const temporaryFile = path.join(
+			temporaryDir,
+			document.isUntitled ? 'untitled.php' : path.basename(document.fileName),
+		)
 
 		try {
 			await fs.writeFile(temporaryFile, originalContents, 'utf8')
-			log.appendLine(`Temp file: ${temporaryFile}`)
 
-			// Build command arguments
-			const allowRisky = workspace.getConfiguration('php-cs-fixer').get<boolean>('allow-risky')
+			const allowRisky = workspace
+				.getConfiguration('php-cs-fixer', document.uri)
+				.get<boolean>('allow-risky')
 			const args = [
 				'fix',
 				'--using-cache=no',
 				`--allow-risky=${allowRisky ? 'yes' : 'no'}`,
 				'-n', // non-interactive
 				'-q', // quiet
-				`--config=${phpCsFixerConfig}`,
+				...(tools.config ? [`--config=${tools.config}`] : []),
 				temporaryFile,
 			]
 
-			log.appendLine(`Running: ${phpCsFixerExecutable} ${args.join(' ')}`)
+			log.debug(`Running in ${cwd ?? process.cwd()}: ${tools.executable} ${args.join(' ')}`)
 
-			// Execute PHP-CS-Fixer using spawn (handles paths with spaces correctly)
-			const result = await executePhpCsFixer(phpCsFixerExecutable, args, cwd, token)
+			const result = await executePhpCsFixer(tools.executable, args, cwd, token)
 
 			if (!isSuccessExitCode(result.exitCode)) {
-				const errorMsg = result.stderr || `Exit code: ${result.exitCode}`
-				log.appendLine(`Error: ${errorMsg}`)
-				window.showErrorMessage(`PHP-CS-Fixer failed: ${errorMsg}`)
+				const message = `PHP-CS-Fixer failed: ${result.stderr.trim() || `exit code ${result.exitCode}`}`
+				showProblem(message)
+				notifyOnce(message)
 				return undefined
 			}
 
-			// Read fixed content
 			const fixedContents = await fs.readFile(temporaryFile, 'utf8')
-
-			// Check if content changed
 			if (fixedContents === originalContents) {
-				log.appendLine('No changes needed')
+				log.info('No changes needed')
 				return undefined
 			}
 
-			log.appendLine('File formatted successfully')
+			log.info('File formatted')
 
-			// Return edit to replace entire document
 			const lastLine = document.lineAt(document.lineCount - 1)
 			const range = new Range(new Position(0, 0), lastLine.range.end)
 
 			return [TextEdit.replace(range, fixedContents)]
 		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error)
-			log.appendLine(`Error: ${message}`)
-			window.showErrorMessage(`PHP-CS-Fixer error: ${message}`)
+			const message = `PHP-CS-Fixer error: ${error instanceof Error ? error.message : String(error)}`
+			showProblem(message)
+			notifyOnce(message)
 			return undefined
 		} finally {
-			// Clean up temp file
-			try {
-				await fs.rm(temporaryFile, { force: true })
-			} catch {
-				// Ignore cleanup errors
-			}
+			await fs.rm(temporaryDir, { recursive: true, force: true })
 		}
 	}
 }
