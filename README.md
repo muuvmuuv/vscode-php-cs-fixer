@@ -4,6 +4,7 @@
 
 [![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/muuvmuuv.vscode-just-php-cs-fixer?style=flat-square&label=VS%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=muuvmuuv.vscode-just-php-cs-fixer)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/muuvmuuv.vscode-just-php-cs-fixer?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=muuvmuuv.vscode-just-php-cs-fixer)
+[![Open VSX](https://img.shields.io/open-vsx/v/muuvmuuv/vscode-just-php-cs-fixer?style=flat-square&label=Open%20VSX)](https://open-vsx.org/extension/muuvmuuv/vscode-just-php-cs-fixer)
 [![License](https://img.shields.io/github/license/muuvmuuv/vscode-php-cs-fixer?style=flat-square)](./LICENSE.md)
 
 A lightweight VS Code extension that formats PHP files using [PHP-CS-Fixer](https://github.com/PHP-CS-Fixer/PHP-CS-Fixer). Zero dependencies, auto-discovers your config and executable.
@@ -35,7 +36,7 @@ composer global require friendsofphp/php-cs-fixer
 
 ## Quick Start
 
-1. Install this extension from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=muuvmuuv.vscode-just-php-cs-fixer)
+1. Install this extension from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=muuvmuuv.vscode-just-php-cs-fixer) or [Open VSX](https://open-vsx.org/extension/muuvmuuv/vscode-just-php-cs-fixer)
 2. Install PHP-CS-Fixer via Composer
 3. Optionally create a `.php-cs-fixer.php` config file in your project root
 4. Set this extension as your default PHP formatter:

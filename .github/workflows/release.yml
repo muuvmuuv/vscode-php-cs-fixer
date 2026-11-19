@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  release:
+    types:
+      - published
+
+# No write access to the repo; the publish job adds an OIDC token for trusted publishing.
+permissions:
+  contents: read
+
+# Never run two publishes at once, and never cancel one mid-flight.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # Optional deploy gate: add required reviewers to the "release" environment
+    # in repo settings to require manual approval before publishing. The trusted
+    # publishing policies on both registries name this environment, workflow and repo.
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check
+      # Bundled extension: --no-dependencies, as vsce cannot walk pnpm's node_modules
+      # and esbuild already inlines every dependency. pnpm 12's pnpx runs local bins
+      # only; dlx fetches the pinned CLI.
+      - name: Package extension
+        run: pnpm dlx @vscode/vsce@4.1.0 package --no-dependencies --out php-cs-fixer.vsix
+      # Trusted publishing exchanges the job's OIDC token for a short-lived registry
+      # token; neither command falls back to a stored access token.
+      - name: Publish to Open VSX Registry
+        run: pnpm dlx ovsx@1.3.0 publish php-cs-fixer.vsix --trusted-publishing
+      - name: Publish to Visual Studio Marketplace
+        run: pnpm dlx @vscode/vsce@4.1.0 publish --oidc --packagePath php-cs-fixer.vsix

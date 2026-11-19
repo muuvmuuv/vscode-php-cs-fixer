@@ -213,10 +213,12 @@ pnpm test             # Run tests (unit + integration)
 
 1. Update version in `package.json`
 2. Commit: `git commit -m "chore: release vX.Y.Z"`
-3. Tag: `git tag -a vX.Y.Z -m "vX.Y.Z\n\n## What's Changed\n..."`
-4. Publish: `pnpx @vscode/vsce publish --no-dependencies`
+3. Tag: `git tag -a vX.Y.Z -m "vX.Y.Z\n\n## What's Changed\n..."` and push commit and tag
+4. Create and publish the GitHub release for the tag; that runs `.github/workflows/release.yml`
 
-**Note:** Ensure PAT (Personal Access Token) is valid before publishing.
+The release workflow publishes to the VS Code Marketplace (`vsce publish --oidc`) and Open VSX (`ovsx publish --trusted-publishing`) with trusted publishing, so no tokens are stored. Both registries hold a policy naming this repository, the `release.yml` workflow and the `release` environment; renaming any of them breaks publishing.
+
+Run vsce with `pnpm dlx @vscode/vsce@<version>`: under pnpm 12, `pnpx` only runs local bins.
 
 ## Quick Reference
 
